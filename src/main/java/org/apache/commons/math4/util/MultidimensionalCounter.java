@@ -231,6 +231,7 @@ public class MultidimensionalCounter implements Iterable<Integer> {
      * @throws OutOfRangeException if {@code index} is not between
      * {@code 0} and the value returned by {@link #getSize()} (excluded).
      */
+    @SuppressWarnings("index:array.access.unsafe.high") // #1: i < last < dimension which is the length of indices and uniCounterOffset
     public int[] getCounts(int index) throws OutOfRangeException {
         if (index < 0 ||
             index >= totalSize) {
@@ -242,14 +243,14 @@ public class MultidimensionalCounter implements Iterable<Integer> {
         int count = 0;
         for (int i = 0; i < last; i++) {
             int idx = 0;
-            final int offset = uniCounterOffset[i];
+            final int offset = uniCounterOffset[i]; // #1
             while (count <= index) {
                 count += offset;
                 ++idx;
             }
             --idx;
             count -= offset;
-            indices[i] = idx;
+            indices[i] = idx; // #1
         }
 
         indices[last] = index - count;
