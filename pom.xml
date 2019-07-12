@@ -696,11 +696,11 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
           <!-- Enable MathJax -->
-           <additionalOptions>-Xdoclint:all --allow-script-in-comments -header '&lt;script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/${math.mathjax.version}/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;'</additionalOptions>
+          <additionalOptions>-Xdoclint:all --allow-script-in-comments -header '&lt;script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/${math.mathjax.version}/MathJax.js?config=TeX-AMS-MML_HTMLorMML"&gt;&lt;/script&gt;'</additionalOptions>
           <!-- <aggregate>true</aggregate> -->
         </configuration>
       </plugin>
-       <plugin>
+      <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
         <version>${commons.rat.version}</version>
@@ -793,14 +793,19 @@
         <artifactId>apache-rat-plugin</artifactId>
         <version>${commons.rat.version}</version>
         <configuration>
-          <excludes>
+          <!--
+          Needed for command-line access, e.g mvn apache-rat:rat and mvn apache-rat:check
+          Below should agree with config in <build> section, so the site
+          gets consistent output.
+        -->
+           <excludes>
 
             <!-- MANIFEST files cannot have any comments, so we can't put license header -->
             <exclude>src/test/maxima/special/RealFunctionValidation/MANIFEST.txt</exclude>
 
             <!-- the following are test data files with specific syntax that cannot include
                  Apache header (and the contained data is public, it is not owned by Apache) -->
-            <exclude>src/test/resources/org/apache/commons/math4/random/testData.txt</exclude>
+            <exclude>src/test/resources/org/apache/commons/math4/distribution/testData.txt</exclude>
             <exclude>src/test/resources/org/apache/commons/math4/random/emptyFile.txt</exclude>
             <exclude>src/test/resources/org/apache/commons/math4/stat/data/PiDigits.txt</exclude>
             <exclude>src/test/resources/org/apache/commons/math4/stat/data/NumAcc3.txt</exclude>
