@@ -23,6 +23,9 @@ import java.io.Serializable;
 import java.util.ConcurrentModificationException;
 import java.util.NoSuchElementException;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.SameLen;
+
 /**
  * Open addressed map from int to double.
  * <p>This class provides a dedicated map from integers to doubles with a
@@ -64,13 +67,13 @@ public class OpenIntToDoubleHashMap implements Serializable {
     private static final int PERTURB_SHIFT = 5;
 
     /** Keys table. */
-    private int[] keys;
+    private int @SameLen({"this.states", "this.values"}) [] keys;
 
     /** Values table. */
-    private double[] values;
+    private double @SameLen({"this.states", "this.keys"}) [] values;
 
     /** States table. */
-    private byte[] states;
+    private byte @SameLen({"this.values", "this.keys"}) [] states;
 
     /** Return value for missing entries. */
     private final double missingEntries;
@@ -103,7 +106,7 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * Build an empty map with specified size and using NaN for missing entries.
      * @param expectedSize expected number of elements in the map
      */
-    public OpenIntToDoubleHashMap(final int expectedSize) {
+    public OpenIntToDoubleHashMap(final @NonNegative int expectedSize) {
         this(expectedSize, Double.NaN);
     }
 
@@ -112,12 +115,13 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param expectedSize expected number of elements in the map
      * @param missingEntries value to return when a missing entry is fetched
      */
-    public OpenIntToDoubleHashMap(final int expectedSize,
+    @SuppressWarnings("index:assignment.type.incompatible") // #1: all three are assigned with equal length, i.e., capacity, hence @SameLen
+    public OpenIntToDoubleHashMap(final @NonNegative int expectedSize,
                                   final double missingEntries) {
         final int capacity = computeCapacity(expectedSize);
-        keys   = new int[capacity];
-        values = new double[capacity];
-        states = new byte[capacity];
+        keys   = new int[capacity]; // #1
+        values = new double[capacity]; // #1
+        states = new byte[capacity]; // #1
         this.missingEntries = missingEntries;
         mask   = capacity - 1;
     }
@@ -126,11 +130,12 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * Copy constructor.
      * @param source map to copy
      */
+    @SuppressWarnings("index:assignment.type.incompatible") // #1: all three are assigned with equal length, i.e., capacity, hence @SameLen
     public OpenIntToDoubleHashMap(final OpenIntToDoubleHashMap source) {
         final int length = source.keys.length;
-        keys = new int[length];
+        keys = new int[length]; // #1
         System.arraycopy(source.keys, 0, keys, 0, length);
-        values = new double[length];
+        values = new double[length]; // #1
         System.arraycopy(source.values, 0, values, 0, length);
         states = new byte[length];
         System.arraycopy(source.states, 0, states, 0, length);
@@ -145,16 +150,17 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param expectedSize expected size of the map
      * @return capacity to use for the specified size
      */
-    private static int computeCapacity(final int expectedSize) {
+    @SuppressWarnings({"index:return.type.incompatible","index:argument.type.incompatible"}) // #1: capacity by #0.1 is (int) FastMath.ceil(@NonNegative / @NonNegative) which is @NonNegative
+    private static @NonNegative int computeCapacity(final @NonNegative int expectedSize) {
         if (expectedSize == 0) {
             return 1;
         }
-        final int capacity   = (int) FastMath.ceil(expectedSize / LOAD_FACTOR);
+        final int capacity   = (int) FastMath.ceil(expectedSize / LOAD_FACTOR); // #0.1
         final int powerOfTwo = Integer.highestOneBit(capacity);
         if (powerOfTwo == capacity) {
-            return capacity;
+            return capacity; // #1
         }
-        return nextPowerOfTwo(capacity);
+        return nextPowerOfTwo(capacity); // #1
     }
 
     /**
@@ -162,7 +168,8 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param i input value
      * @return smallest power of two greater than the input value
      */
-    private static int nextPowerOfTwo(final int i) {
+    @SuppressWarnings("index:return.type.incompatible") // @NonNegative << 1 is @NonNegative
+    private static @NonNegative int nextPowerOfTwo(final @NonNegative int i) {
         return Integer.highestOneBit(i) << 1;
     }
 

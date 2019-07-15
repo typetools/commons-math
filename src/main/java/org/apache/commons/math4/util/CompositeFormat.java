@@ -75,6 +75,7 @@ public class CompositeFormat {
      * @param pos input/output parsing parameter.
      * @return the first non-whitespace character.
      */
+    @SuppressWarnings("index:argument.type.incompatible") // #1: index < n (source.length) as checked by the condition of the loop and for the first time by the if statement
     public static char parseNextCharacter(final String source,
                                           final ParsePosition pos) {
          int index = pos.getIndex();
@@ -84,7 +85,7 @@ public class CompositeFormat {
          if (index < n) {
              char c;
              do {
-                 c = source.charAt(index++);
+                 c = source.charAt(index++); // #1
              } while (Character.isWhitespace(c) && index < n);
              pos.setIndex(index);
 
@@ -105,6 +106,7 @@ public class CompositeFormat {
      * @param pos input/output parsing parameter.
      * @return the special number.
      */
+    @SuppressWarnings("index:argument.type.incompatible") // #1: startIndex is @NonNegative, and as startIndex + n (@NonNegative) < source.length(), startIndex < source.length
     private static Number parseNumber(final String source, final double value,
                                       final ParsePosition pos) {
         Number ret = null;
@@ -118,7 +120,7 @@ public class CompositeFormat {
         final int startIndex = pos.getIndex();
         final int endIndex = startIndex + n;
         if (endIndex < source.length() &&
-            source.substring(startIndex, endIndex).compareTo(sb.toString()) == 0) {
+            source.substring(startIndex, endIndex).compareTo(sb.toString()) == 0) { // #1
             ret = Double.valueOf(value);
             pos.setIndex(endIndex);
         }
@@ -166,6 +168,7 @@ public class CompositeFormat {
      * @param pos input/output parsing parameter.
      * @return true if the expected string was there
      */
+    @SuppressWarnings("index:argument.type.incompatible") // The substring function is called only when the previous two condition fail, i.e, only when startIndex < source.length() && endIndex <= source.length()
     public static boolean parseFixedstring(final String source,
                                            final String expected,
                                            final ParsePosition pos) {
@@ -174,7 +177,7 @@ public class CompositeFormat {
         final int endIndex = startIndex + expected.length();
         if ((startIndex >= source.length()) ||
             (endIndex > source.length()) ||
-            (source.substring(startIndex, endIndex).compareTo(expected) != 0)) {
+            (source.substring(startIndex, endIndex).compareTo(expected) != 0)) { // #1
             // set index back to start, error index should be the start index
             pos.setIndex(startIndex);
             pos.setErrorIndex(startIndex);

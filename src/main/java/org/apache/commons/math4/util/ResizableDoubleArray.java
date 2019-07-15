@@ -26,6 +26,13 @@ import org.apache.commons.math4.exception.NullArgumentException;
 import org.apache.commons.math4.exception.NumberIsTooSmallException;
 import org.apache.commons.math4.exception.util.LocalizedFormats;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.LessThan;
+import org.checkerframework.common.value.qual.IntRange;
+import org.checkerframework.common.value.qual.MinLen;
+
 /**
  * A variable length {@link DoubleArray} implementation that automatically
  * handles expanding and contracting its internal storage array as elements
@@ -114,20 +121,21 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
     /**
      * The internal storage array.
      */
-    private double[] internalArray;
+    private double @MinLen(1) [] internalArray;
 
     /**
      * The number of addressable elements in the array.  Note that this
      * has nothing to do with the length of the internal storage array.
      */
-    private int numElements = 0;
+    @SuppressWarnings("index:assignment.type.incompatible") // internalArray is @MinLen(1) and startIndex is @IndexFor("internalArray"), hence 0 < 1 - 0 + 1
+    private @NonNegative @LTLengthOf(value = {"this.internalArray"}, offset = {"this.startIndex - 1"}) int numElements = 0;
 
     /**
      * The position of the first addressable element in the internal storage
      * array.  The addressable elements in the array are
      * {@code internalArray[startIndex],...,internalArray[startIndex + numElements - 1]}.
      */
-    private int startIndex = 0;
+    private @NonNegative @IndexFor("this.internalArray") int startIndex = 0;
 
     /**
      * Specification of expansion algorithm.
@@ -267,6 +275,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @throws MathIllegalArgumentException if the parameters are not valid.
      * @throws NullArgumentException if expansionMode is null
      */
+    @SuppressWarnings("index:assignment.type.incompatible") // internalArray is @MinLen(1) and startIndex is @IndexFor("internalArray"), hence 0 < 1 - 0 + 1
     public ResizableDoubleArray(int initialCapacity,
                                 double expansionFactor,
                                 double contractionCriterion,
@@ -284,7 +293,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
         this.contractionCriterion = contractionCriterion;
         this.expansionMode = expansionMode;
         internalArray = new double[initialCapacity];
-        numElements = 0;
+        numElements = 0; // #1
         startIndex = 0;
 
         if (data != null && data.length > 0) {
@@ -302,6 +311,9 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @exception NullArgumentException if original is null
      * @since 2.0
      */
+    @SuppressWarnings("index:assignment.type.incompatible") /* #1: all the variables of the object original(which has the same annotations) is copied to this,
+    hence, still this.numElements <= this.internalArray.length - this.startIndex
+    */
     public ResizableDoubleArray(final ResizableDoubleArray original)
         throws NullArgumentException {
         MathUtils.checkNotNull(original);
@@ -310,7 +322,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
         this.expansionMode = original.expansionMode;
         this.internalArray = new double[original.internalArray.length];
         System.arraycopy(original.internalArray, 0, this.internalArray, 0, this.internalArray.length);
-        this.numElements = original.numElements;
+        this.numElements = original.numElements; // #1
         this.startIndex = original.startIndex;
     }
 
@@ -319,12 +331,15 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      *
      * @param value Value to be added to end of array.
      */
+    @SuppressWarnings({"index:array.access.unsafe.high","compound.assignment.type.incompatible"}) /* #1: expand() increases the length by at least 1,
+    since this function adds elements one by one, startIndex + numElements in #1 will always be @IndexFor("internalArray")
+    */
     @Override
     public void addElement(final double value) {
         if (internalArray.length <= startIndex + numElements) {
             expand();
         }
-        internalArray[startIndex + numElements++] = value;
+        internalArray[startIndex + numElements++] = value; // #1
     }
 
     /**
@@ -334,13 +349,19 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @since 2.2
      */
     @Override
+    @SuppressWarnings({"index:argument.type.incompatible","compound.assignment.type.incompatible"}) /*
+    #1: numElements <= tempArray.length as tempArray.length = numElements + values.length + 1
+    #2: values.length <= tempArray.length - numElements = numElements + values.length + 1 - values.length = values.length + 1
+    #3: internalArray's new length = numElements + values.length + 1 nad startIndex = 0, hence numElements + values.length < internalArray.length - startIndex + 1
+    */
     public void addElements(final double[] values) {
-        final double[] tempArray = new double[numElements + values.length + 1];
-        System.arraycopy(internalArray, startIndex, tempArray, 0, numElements);
-        System.arraycopy(values, 0, tempArray, numElements, values.length);
+        @SuppressWarnings("value:assignment.type.incompatible") // numElements + values.length + 1 is minimum 1 as numElements and values.length both are @NonNegative
+        final double @MinLen(1) [] tempArray = new double[numElements + values.length + 1];
+        System.arraycopy(internalArray, startIndex, tempArray, 0, numElements); // #1
+        System.arraycopy(values, 0, tempArray, numElements, values.length); // #2
         internalArray = tempArray;
         startIndex = 0;
-        numElements += values.length;
+        numElements += values.length; // #3
     }
 
     /**
@@ -357,6 +378,9 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @return the value which has been discarded or "pushed" out of the array
      * by this rolling insert.
      */
+    @SuppressWarnings({"index:array.access.unsafe.high", "index:compound.assignment.type.incompatible"}) /* #1, #2: expand() increases the length by at least 1,
+    since this function adds elements one by one, startIndex + numElements in #1 will always be @IndexFor("internalArray")
+    */
     @Override
     public double addElementRolling(double value) {
         double discarded = internalArray[startIndex];
@@ -365,10 +389,10 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
             expand();
         }
         // Increment the start index
-        startIndex += 1;
+        startIndex += 1; // #2
 
         // Add the new value
-        internalArray[startIndex + (numElements - 1)] = value;
+        internalArray[startIndex + (numElements - 1)] = value; // #1
 
         // Check the contraction criterion.
         if (shouldContract()) {
@@ -440,8 +464,9 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * Clear the array contents, resetting the number of elements to zero.
      */
     @Override
+    @SuppressWarnings("index:assignment.type.incompatible") // internalArray is @MinLen(1) and startIndex is @IndexFor("internalArray"), hence 0 < 1 - 0 + 1
     public void clear() {
-        numElements = 0;
+        numElements = 0; // #1
         startIndex = 0;
     }
 
@@ -450,7 +475,8 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * a zero length array. This function also resets the startIndex to zero.
      */
     public void contract() {
-        final double[] tempArray = new double[numElements + 1];
+        @SuppressWarnings("value:assignment.type.incompatible") // numElements + values.length + 1 is minimum 1 as numElements and values.length both are @NonNegative
+        final double @MinLen(1) [] tempArray = new double[numElements + 1];
 
         // Copy and swap - copy only the element array from the src array.
         System.arraycopy(internalArray, startIndex, tempArray, 0, numElements);
@@ -471,7 +497,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @throws MathIllegalArgumentException if i is greater than numElements.
      * @since 2.0
      */
-    public void discardFrontElements(int i) throws MathIllegalArgumentException {
+    public void discardFrontElements(@NonNegative @LessThan("this.numElements + 1") int i) throws MathIllegalArgumentException {
         discardExtremeElements(i,true);
     }
 
@@ -486,7 +512,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @throws MathIllegalArgumentException if i is greater than numElements.
      * @since 2.0
      */
-    public void discardMostRecentElements(int i) throws MathIllegalArgumentException {
+    public void discardMostRecentElements(@NonNegative @LessThan("this.numElements + 1") int i) throws MathIllegalArgumentException {
         discardExtremeElements(i,false);
     }
 
@@ -508,7 +534,8 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @throws MathIllegalArgumentException if i is greater than numElements.
      * @since 2.0
      */
-    private void discardExtremeElements(int i, boolean front) throws MathIllegalArgumentException {
+    @SuppressWarnings("index:compound.assignment.type.incompatible") // #1: i < numElements => startIndex + i < internalArray.length
+    private void discardExtremeElements(@NonNegative @LessThan("this.numElements + 1") int i, boolean front) throws MathIllegalArgumentException {
         if (i > numElements) {
             throw new MathIllegalArgumentException(
                     LocalizedFormats.TOO_MANY_ELEMENTS_TO_DISCARD_FROM_ARRAY,
@@ -521,7 +548,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
             // "Subtract" this number of discarded from numElements
             numElements -= i;
             if (front) {
-                startIndex += i;
+                startIndex += i; // #1
             }
         }
         if (shouldContract()) {
@@ -537,6 +564,11 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * If {@code expansionMode} is set to ADDITIVE, the length
      * after expansion will be {@code internalArray.length + expansionFactor}.
      */
+    @SuppressWarnings({"index:array.length.negative", "index:argument.type.incompatible", "value:assignment.type.incompatible"}) /*
+    #1: newSize is at least internalArray.length + 1 as explained in the documentation
+    #2: internalArray.length < tempArray.length
+    #3: tempArray.length is @MinLen(1) as well by #1
+    */
     protected void expand() {
         // notice the use of FastMath.ceil(), this guarantees that we will always
         // have an array of at least currentSize + 1.   Assume that the
@@ -549,11 +581,11 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
         } else {
             newSize = (int) (internalArray.length + FastMath.round(expansionFactor));
         }
-        final double[] tempArray = new double[newSize];
+        final double[] tempArray = new double[newSize]; // #1
 
         // Copy and swap
-        System.arraycopy(internalArray, 0, tempArray, 0, internalArray.length);
-        internalArray = tempArray;
+        System.arraycopy(internalArray, 0, tempArray, 0, internalArray.length); // #2
+        internalArray = tempArray; // #3
     }
 
     /**
@@ -561,10 +593,11 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      *
      * @param size Size of the new internal storage array.
      */
-    private void expandTo(int size) {
+    @SuppressWarnings("index:argument.type.incompatible") // #1: this is an internal method which is called only twice and at each occurence, internalArray.length <= size is checked
+    private void expandTo(@IntRange(from = 1, to = Integer.MAX_VALUE) int size) {
         final double[] tempArray = new double[size];
         // Copy and swap
-        System.arraycopy(internalArray, 0, tempArray, 0, internalArray.length);
+        System.arraycopy(internalArray, 0, tempArray, 0, internalArray.length); // #1
         internalArray = tempArray;
     }
 
@@ -733,17 +766,22 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @throws ArrayIndexOutOfBoundsException if {@code index < 0}.
      */
     @Override
-    public void setElement(int index, double value) {
+    @SuppressWarnings({"index:assignment.type.incompatible", "array.access.unsafe.high", "value:argument.type.incompatible"}) /*
+    #1: if numElements > internalArray.length - startIndex, internalArray is expanded by #0.1
+    #2: Id startIndex + index >= internalArray.length, internalArray is expanded by #0.1
+    #3: startIndex and index both are @NonNegative, hence startIndex + index + 1 is minimum 1
+    */
+    public void setElement(@NonNegative int index, double value) {
         if (index < 0) {
             throw new ArrayIndexOutOfBoundsException(index);
         }
         if (index + 1 > numElements) {
-            numElements = index + 1;
+            numElements = index + 1; //#1
         }
         if ((startIndex + index) >= internalArray.length) {
-            expandTo(startIndex + (index + 1));
+            expandTo(startIndex + (index + 1)); // #0.1, #3
         }
-        internalArray[startIndex + index] = value;
+        internalArray[startIndex + index] = value; // #2
     }
 
     /**
@@ -754,7 +792,8 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @param i a new number of elements
      * @throws MathIllegalArgumentException if {@code i} is negative.
      */
-    public void setNumElements(int i) throws MathIllegalArgumentException {
+    @SuppressWarnings("index:assignment.type.incompatible") // #1: expandTo(startIndex + i) => i <= internalArray.length - startIndex
+    public void setNumElements(@NonNegative int i) throws MathIllegalArgumentException {
         // If index is negative thrown an error.
         if (i < 0) {
             throw new MathIllegalArgumentException(LocalizedFormats.INDEX_NOT_POSITIVE, i);
@@ -768,7 +807,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
         }
 
         // Set the new number of elements to new value.
-        numElements = i;
+        numElements = i; // #1
     }
 
     /**

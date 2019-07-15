@@ -26,6 +26,9 @@ import org.apache.commons.math4.exception.util.LocalizedFormats;
 import org.apache.commons.numbers.combinatorics.Factorial;
 import org.apache.commons.numbers.combinatorics.BinomialCoefficient;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.LessThan;
+
 /**
  * Combinatorial utilities.
  *
@@ -57,7 +60,12 @@ public final class CombinatoricsUtils {
      * k between 20 and n-2 (S(n,n-1) is handled specifically and does not overflow)
      * @since 3.1
      */
-    public static long stirlingS2(final int n, final int k)
+    @SuppressWarnings("index:array.access.unsafe.high") /*
+    #1: i starts from 1, hence stirlingS2 has minimum 2 columns
+    #2: stirlingS2 has i + 1 columns, and j < i is checked
+    #3: k <= n as annotated and n < stirlingS2.length as annotated
+    */
+    public static long stirlingS2(final @NonNegative int n, final @NonNegative @LessThan("#1 + 1") int k)
         throws NotPositiveException, NumberIsTooLargeException, MathArithmeticException {
         if (k < 0) {
             throw new NotPositiveException(k);
@@ -78,12 +86,12 @@ public final class CombinatoricsUtils {
             stirlingS2 = new long[maxIndex][];
             stirlingS2[0] = new long[] { 1l };
             for (int i = 1; i < stirlingS2.length; ++i) {
-                stirlingS2[i] = new long[i + 1];
-                stirlingS2[i][0] = 0;
-                stirlingS2[i][1] = 1;
+                stirlingS2[i] = new long[i + 1]; // #0.1
+                stirlingS2[i][0] = 0; // #1
+                stirlingS2[i][1] = 1; // #1
                 stirlingS2[i][i] = 1;
                 for (int j = 2; j < i; ++j) {
-                    stirlingS2[i][j] = j * stirlingS2[i - 1][j] + stirlingS2[i - 1][j - 1];
+                    stirlingS2[i][j] = j * stirlingS2[i - 1][j] + stirlingS2[i - 1][j - 1]; // #2
                 }
             }
 
@@ -94,7 +102,7 @@ public final class CombinatoricsUtils {
 
         if (n < stirlingS2.length) {
             // the number is in the small cache
-            return stirlingS2[n][k];
+            return stirlingS2[n][k]; // #3
         } else {
             // use explicit formula to compute the number without caching it
             if (k == 0) {
