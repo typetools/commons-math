@@ -178,14 +178,14 @@ public class MultidimensionalCounter implements Iterable<Integer> {
      * @throws NotStrictlyPositiveException if one of the sizes is
      * negative or zero.
      */
-    @SuppressWarnings("index:assignment.type.incompatible") // #1: By #0.1, this.size.length = size.length
+    @SuppressWarnings("index:assignment.type.incompatible") // #1: uniCounterOffset has length dimension by #0.1, hence, dimension is @LTEqLengthOf("this.uniCounterOffset")
     public MultidimensionalCounter(int @MinLen(1) ... size) throws NotStrictlyPositiveException {
-        dimension = size.length; // #1
-        this.size = MathArrays.copyOf(size); // #0.1
+        this.size = MathArrays.copyOf(size);
+        dimension = size.length; // #1:
 
-        uniCounterOffset = new int[dimension];
+        uniCounterOffset = new int[dimension]; // #0.1
 
-        last = dimension - 1; // #1
+        last = dimension - 1;
         int tS = size[last];
         for (int i = 0; i < last; i++) {
             int count = 1;
@@ -232,7 +232,7 @@ public class MultidimensionalCounter implements Iterable<Integer> {
      * {@code 0} and the value returned by {@link #getSize()} (excluded).
      */
     @SuppressWarnings("index:array.access.unsafe.high") // #1: i < last < dimension which is the length of indices and uniCounterOffset
-    public int[] getCounts(int index) throws OutOfRangeException {
+    public int[] getCounts(@NonNegative int index) throws OutOfRangeException {
         if (index < 0 ||
             index >= totalSize) {
             throw new OutOfRangeException(index, 0, totalSize);

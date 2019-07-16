@@ -1135,22 +1135,6 @@
             </execution>
           </executions>
         </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.3</version>
-          <configuration>
-            <source>${java.version}</source>
-            <target>${java.version}</target>
-            <annotationProcessors>
-              <annotationProcessor>org.checkerframework.checker.index.IndexChecker</annotationProcessor>
-            </annotationProcessors>
-            <compilerArgs>
-              <arg>-Xbootclasspath/p:${org.checkerframework:jdk8:jar}</arg>
-              <arg>-AonlyDefs=^org\.apache\.commons\.math4\.util\.</arg>
-            </compilerArgs>
-          </configuration>
-        </plugin>
       </plugins>
     </build>
   </profile>

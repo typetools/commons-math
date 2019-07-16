@@ -48,9 +48,7 @@ import org.checkerframework.checker.index.qual.IndexFor;
 import org.checkerframework.checker.index.qual.LessThan;
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.common.value.qual.MinLen;
-import org.checkerframework.checker.index.qual.PolySameLen;
-import org.checkerframework.checker.index.qual.PolyLowerBound;
-import org.checkerframework.checker.index.qual.PolyUpperBound;
+import org.checkerframework.framework.qual.PolyAll;
 
 /**
  * Arrays utilities.
@@ -328,7 +326,7 @@ public class MathArrays {
      * @param strict Whether the order should be strict.
      * @return {@code true} if sorted, {@code false} otherwise.
      */
-    public static  <T extends Comparable<? super T>> boolean isMonotonic(@PolyUpperBound @PolyLowerBound @PolySameLen T @MinLen(1) [] val,
+    public static  <T extends Comparable<? super T>> boolean isMonotonic(@PolyAll T @MinLen(1) [] val,
                                       OrderDirection dir,
                                       boolean strict) {
         T previous = val[0];
@@ -784,18 +782,21 @@ public class MathArrays {
      * @param source Array to be copied.
      * @return the copied array.
      */
-     public static int[] copyOf(int[] source) {
-         return copyOf(source, source.length);
+    @SuppressWarnings("index:return.type.incompatible") // #1: source.length is the length of the returning array
+     public static int @SameLen("#1") [] copyOf(int[] source) {
+         return copyOf(source, source.length); // #1
      }
 
     /**
      * Creates a copy of the {@code source} array.
      *
      * @param source Array to be copied.
-     * @return the copied array.
+     * @
+     return the copied array.
      */
-     public static double[] copyOf(double[] source) {
-         return copyOf(source, source.length);
+     @SuppressWarnings("index:return.type.incompatible") // #1: source.length is the length of the returning array
+     public static double @SameLen("#1") [] copyOf(double[] source) {
+         return copyOf(source, source.length); // #1
      }
 
     /**
@@ -838,7 +839,7 @@ public class MathArrays {
      * @param to Final index of the range to be copied, exclusive. (This index may lie outside the array.)
      * @return the copied array.
      */
-    @SuppressWarnings("index:argument.type.incompatible") // #1: As FastMath.min(len, source.length - from)) is the minimum of both the arguments, the expression <= source.length - fron and <= output
+    @SuppressWarnings("index:argument.type.incompatible") // #1: As FastMath.min(len, source.length - from)) is the minimum of both the arguments, FastMath.min(len, source.length - from)) <= source.length - from and <= output
     public static double[] copyOfRange(double[] source, @LTEqLengthOf("#1") @LessThan("#3") @NonNegative int from, @NonNegative int to) {
         final int len = to - from;
         final double[] output = new double[len];
