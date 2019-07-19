@@ -17,10 +17,18 @@
 package org.apache.commons.math4.util;
 
 import java.io.PrintStream;
+import java.util.*;
 
 import org.apache.commons.numbers.core.Precision;
 import org.apache.commons.math4.exception.MathArithmeticException;
 import org.apache.commons.math4.exception.util.LocalizedFormats;
+
+import org.checkerframework.common.value.qual.ArrayLen;
+import org.checkerframework.checker.index.qual.SameLen;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+import org.checkerframework.checker.index.qual.LessThan;
+import org.checkerframework.checker.index.qual.Positive;
 
 /**
  * Faster, more accurate, portable alternative to {@link Math} and
@@ -87,7 +95,7 @@ public class FastMath {
     public static final double E = 2850325.0 / 1048576.0 + 8.254840070411028747e-8;
 
     /** Index of exp(0) in the array of integer exponentials. */
-    static final int EXP_INT_TABLE_MAX_INDEX = 750;
+    static final @NonNegative @LTLengthOf(value = {"ExpIntTable.EXP_INT_TABLE_A","ExpIntTable.EXP_INT_TABLE_B"}, offset = {"749", "749"}) int EXP_INT_TABLE_MAX_INDEX = 750;
     /** Length of the array of integer exponentials. */
     static final int EXP_INT_TABLE_LEN = EXP_INT_TABLE_MAX_INDEX * 2;
     /** Logarithm table length. */
@@ -114,7 +122,7 @@ public class FastMath {
     private static final double LN_2_B = 1.17304635250823482e-7;
 
     /** Coefficients for log, when input 0.99 < x < 1.01. */
-    private static final double LN_QUICK_COEF[][] = {
+    private static final double LN_QUICK_COEF @ArrayLen(9) [] @ArrayLen(2) [] = {
         {1.0, 5.669184079525E-24},
         {-0.25, -0.25},
         {0.3333333134651184, 1.986821492305628E-8},
@@ -127,7 +135,7 @@ public class FastMath {
     };
 
     /** Coefficients for log in the range of 1.0 < x < 1.0 + 2^-10. */
-    private static final double LN_HI_PREC_COEF[][] = {
+    private static final double LN_HI_PREC_COEF @ArrayLen(6) [] @ArrayLen(2) [] = {
         {1.0, -6.032174644509064E-23},
         {-0.25, -0.25},
         {0.3333333134651184, 1.9868161777724352E-8},
@@ -871,7 +879,11 @@ public class FastMath {
      * @param hiPrec extra bits of precision on output (To Be Confirmed)
      * @return exp(x)
      */
-    private static double exp(double x, double extra, double[] hiPrec) {
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) /*
+    #1: EXP_INT_TABLE_MAX_INDEX is @NonNegative and @LTLengthOf(value = {"ExpIntTable.EXP_INT_TABLE_A","ExpIntTable.EXP_INT_TABLE_B"}, offset = {"749", "749"}) as annotated
+    #2: intfrac is @NonNegative and <= 1024 by #0.1 and EXP_FRAC_TABLE_A and EXP_FRAC_TABLE_B are ArrayLen(1025)
+    */
+    private static double exp(double x, double extra, double @ArrayLen(2) [] hiPrec) {
         double intPartA;
         double intPartB;
         int intVal = (int) x;
@@ -925,16 +937,16 @@ public class FastMath {
 
         }
 
-        intPartA = ExpIntTable.EXP_INT_TABLE_A[EXP_INT_TABLE_MAX_INDEX+intVal];
-        intPartB = ExpIntTable.EXP_INT_TABLE_B[EXP_INT_TABLE_MAX_INDEX+intVal];
+        intPartA = ExpIntTable.EXP_INT_TABLE_A[EXP_INT_TABLE_MAX_INDEX+intVal]; // #1
+        intPartB = ExpIntTable.EXP_INT_TABLE_B[EXP_INT_TABLE_MAX_INDEX+intVal]; // #1
 
         /* Get the fractional part of x, find the greatest multiple of 2^-10 less than
          * x and look up the exp function of it.
          * fracPartA will have the upper 22 bits, fracPartB the lower 52 bits.
          */
-        final int intFrac = (int) ((x - intVal) * 1024.0);
-        final double fracPartA = ExpFracTable.EXP_FRAC_TABLE_A[intFrac];
-        final double fracPartB = ExpFracTable.EXP_FRAC_TABLE_B[intFrac];
+        final int intFrac = (int) ((x - intVal) * 1024.0); // #0.1
+        final double fracPartA = ExpFracTable.EXP_FRAC_TABLE_A[intFrac]; // #2
+        final double fracPartB = ExpFracTable.EXP_FRAC_TABLE_B[intFrac]; // #2
 
         /* epsilon is the difference in x from the nearest multiple of 2^-10.  It
          * has a value in the range 0 <= epsilon < 2^-10.
@@ -1004,7 +1016,10 @@ public class FastMath {
      * @param hiPrecOut receive high precision result for -1.0 < x < 1.0
      * @return exp(x) - 1
      */
-    private static double expm1(double x, double hiPrecOut[]) {
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) /*
+    #1: intfrac is @NonNegative and <= 1024 by #0.1 and EXP_FRAC_TABLE_A and EXP_FRAC_TABLE_B are ArrayLen(1025)
+    */
+    private static double expm1(double x, double hiPrecOut @ArrayLen(2) []) {
         if (Double.isNaN(x) || x == 0.0) { // NaN or zero
             return x;
         }
@@ -1036,8 +1051,8 @@ public class FastMath {
 
         {
             int intFrac = (int) (x * 1024.0);
-            double tempA = ExpFracTable.EXP_FRAC_TABLE_A[intFrac] - 1.0;
-            double tempB = ExpFracTable.EXP_FRAC_TABLE_B[intFrac];
+            double tempA = ExpFracTable.EXP_FRAC_TABLE_A[intFrac] - 1.0; // #1
+            double tempB = ExpFracTable.EXP_FRAC_TABLE_B[intFrac]; // #1
 
             double temp = tempA + tempB;
             tempB = -(temp - tempA - tempB);
@@ -1162,7 +1177,7 @@ public class FastMath {
      * @param hiPrec extra bits of precision on output (To Be Confirmed)
      * @return log(x)
      */
-    private static double log(final double x, final double[] hiPrec) {
+    private static double log(final double x, final double @ArrayLen(2) [] hiPrec) {
         if (x==0) { // Handle special case of +0/-0
             return Double.NEGATIVE_INFINITY;
         }
@@ -1810,15 +1825,17 @@ public class FastMath {
      *  @param xb extra bits for x (may be 0.0)
      *  @return sin(xa + xb)
      */
-    private static double sinQ(double xa, double xb) {
-        int idx = (int) ((xa * 8.0) + 0.5);
-        final double epsilon = xa - EIGHTHS[idx]; //idx*0.125;
+static double pi_half = PI / 2;
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) // #1: By #0.1, idx can have a maximum value of 13 (as xa < pi / 2) and all the arrays accessed have length 14
+    private static double sinQ(@NonNegative @LessThan("pi_half") double xa, double xb) {
+        int idx = (int) ((xa * 8.0) + 0.5); // #0.1
+        final double epsilon = xa - EIGHTHS[idx]; //idx*0.125; #1
 
         // Table lookups
-        final double sintA = SINE_TABLE_A[idx];
-        final double sintB = SINE_TABLE_B[idx];
-        final double costA = COSINE_TABLE_A[idx];
-        final double costB = COSINE_TABLE_B[idx];
+        final double sintA = SINE_TABLE_A[idx]; // #1
+        final double sintB = SINE_TABLE_B[idx]; // #1
+        final double costA = COSINE_TABLE_A[idx]; // #1
+        final double costB = COSINE_TABLE_B[idx]; // #1
 
         // Polynomial eval of sin(epsilon), cos(epsilon)
         double sinEpsA = epsilon;
@@ -1934,11 +1951,12 @@ public class FastMath {
      *  @param xb extra bits for x (may be 0.0)
      *  @return cos(xa + xb)
      */
-    private static double cosQ(double xa, double xb) {
+    private static double cosQ(@NonNegative @LessThan("pi_half") double xa, double xb) {
         final double pi2a = 1.5707963267948966;
         final double pi2b = 6.123233995736766E-17;
 
-        final double a = pi2a - xa;
+        @SuppressWarnings("index:assignment.type.incompatible") // pi2a is pi_half and xa < pi_half and @NonNegative, hence pi2a - xa is @NonNegative and @LessThan("pi_half")
+        final @NonNegative @LessThan("pi_half") double a = pi2a - xa;
         double b = -(a - pi2a + xa);
         b += pi2b - xb;
 
@@ -1953,16 +1971,17 @@ public class FastMath {
      *  @param cotanFlag if true, compute the cotangent instead of the tangent
      *  @return tan(xa+xb) (or cotangent, depending on cotanFlag)
      */
-    private static double tanQ(double xa, double xb, boolean cotanFlag) {
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) // #1: By #0.1, idx can have a maximum value of 13 (as xa < pi / 2) and all the arrays accessed have length 14
+    private static double tanQ(@NonNegative @LessThan("pi_half") double xa, double xb, boolean cotanFlag) {
 
         int idx = (int) ((xa * 8.0) + 0.5);
-        final double epsilon = xa - EIGHTHS[idx]; //idx*0.125;
+        final double epsilon = xa - EIGHTHS[idx]; //idx*0.125; #1
 
         // Table lookups
-        final double sintA = SINE_TABLE_A[idx];
-        final double sintB = SINE_TABLE_B[idx];
-        final double costA = COSINE_TABLE_A[idx];
-        final double costB = COSINE_TABLE_B[idx];
+        final double sintA = SINE_TABLE_A[idx]; // #1
+        final double sintB = SINE_TABLE_B[idx]; // #1
+        final double costA = COSINE_TABLE_A[idx]; // #1
+        final double costB = COSINE_TABLE_B[idx]; // #1
 
         // Polynomial eval of sin(epsilon), cos(epsilon)
         double sinEpsA = epsilon;
@@ -2101,7 +2120,7 @@ public class FastMath {
      * @param x number to reduce
      * @param result placeholder where to put the result
      */
-    private static void reducePayneHanek(double x, double result[])
+    private static void reducePayneHanek(@Positive double x, double result @ArrayLen(3) [])
     {
         /* Convert input double to bits */
         long inbits = Double.doubleToRawLongBits(x);
@@ -2319,6 +2338,10 @@ public class FastMath {
      * @param x Argument.
      * @return sin(x)
      */
+    @SuppressWarnings("index:argument.type.incompatible") /*
+    #1: xa can be calculated from two different methods reducePayneHanek or CodyWaite,
+    but both give remainders after dividing by pi/2, hence xa < pi/2
+    */
     public static double sin(double x) {
         boolean negative = false;
         int quadrant = 0;
@@ -2368,13 +2391,13 @@ public class FastMath {
 
         switch (quadrant) {
             case 0:
-                return sinQ(xa, xb);
+                return sinQ(xa, xb); // #1
             case 1:
-                return cosQ(xa, xb);
+                return cosQ(xa, xb); // #1
             case 2:
-                return -sinQ(xa, xb);
+                return -sinQ(xa, xb); // #1
             case 3:
-                return -cosQ(xa, xb);
+                return -cosQ(xa, xb); // #1
             default:
                 return Double.NaN;
         }
@@ -2526,6 +2549,9 @@ public class FastMath {
      * @param leftPlane if true, result angle must be put in the left half plane
      * @return atan(xa + xb) (or angle shifted by {@code PI} if leftPlane is true)
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) /* #1: By #0.1, idx is always @NonNegative
+    and can have a maximum value of 13 (as 0 <= oneOverXa <= 1) and all the arrays accessed have length 14
+    */
     private static double atan(double xa, double xb, boolean leftPlane) {
         if (xa == 0.0) { // Matches +/- 0.0; return correct sign
             return leftPlane ? copySign(Math.PI, xa) : xa;
@@ -2551,11 +2577,11 @@ public class FastMath {
             idx = (int) (((-1.7168146928204136 * xa * xa + 8.0) * xa) + 0.5);
         } else {
             final double oneOverXa = 1 / xa;
-            idx = (int) (-((-1.7168146928204136 * oneOverXa * oneOverXa + 8.0) * oneOverXa) + 13.07);
+            idx = (int) (-((-1.7168146928204136 * oneOverXa * oneOverXa + 8.0) * oneOverXa) + 13.07); // #0.1
         }
 
-        final double ttA = TANGENT_TABLE_A[idx];
-        final double ttB = TANGENT_TABLE_B[idx];
+        final double ttA = TANGENT_TABLE_A[idx]; // #1
+        final double ttB = TANGENT_TABLE_B[idx]; // #1
 
         double epsA = xa - ttA;
         double epsB = -(epsA - xa + ttA);
@@ -2641,7 +2667,7 @@ public class FastMath {
         /* Add in effect of epsB.   atan'(x) = 1/(1+x^2) */
         yb += epsB / (1d + epsA * epsA);
 
-        final double eighths = EIGHTHS[idx];
+        final double eighths = EIGHTHS[idx]; // #1
 
         //result = yb + eighths[idx] + ya;
         double za = eighths + ya;
@@ -4182,15 +4208,20 @@ public class FastMath {
     }
 
     /** Enclose large data table in nested static class so it's only loaded on first access. */
+    @SuppressWarnings({"index:array.access.unsafe.high", "value:assignment.type.incompatible"}) /*
+        #1: EXP_INT_TABLE_A and EXP_INT_TABLE_B have length 2 * EXP_INT_TABLE_MAX_INDEX, hence EXP_INT_TABLE_MAX_INDEX + EXP_INT_TABLE_MAX_INDEX - 1 is @IndexFor for both the arrays
+        #2: FastMathLiteralArrays.loadExpIntA() returns the clone of EXP_INT_TABLE_A
+        #3: FastMathLiteralArrays.loadExpIntB() returns the clone of EXP_INT_TABLE_B
+    */
     private static class ExpIntTable {
         /** Exponential evaluated at integer values,
          * exp(x) =  expIntTableA[x + EXP_INT_TABLE_MAX_INDEX] + expIntTableB[x+EXP_INT_TABLE_MAX_INDEX].
          */
-        private static final double[] EXP_INT_TABLE_A;
+        private static final double @ArrayLen(1500) [] EXP_INT_TABLE_A;
         /** Exponential evaluated at integer values,
          * exp(x) =  expIntTableA[x + EXP_INT_TABLE_MAX_INDEX] + expIntTableB[x+EXP_INT_TABLE_MAX_INDEX]
          */
-        private static final double[] EXP_INT_TABLE_B;
+        private static final double @ArrayLen(1500) [] EXP_INT_TABLE_B;
 
         static {
             if (RECOMPUTE_TABLES_AT_RUNTIME) {
@@ -4203,8 +4234,8 @@ public class FastMath {
                 // Populate expIntTable
                 for (int i = 0; i < FastMath.EXP_INT_TABLE_MAX_INDEX; i++) {
                     FastMathCalc.expint(i, tmp);
-                    EXP_INT_TABLE_A[i + FastMath.EXP_INT_TABLE_MAX_INDEX] = tmp[0];
-                    EXP_INT_TABLE_B[i + FastMath.EXP_INT_TABLE_MAX_INDEX] = tmp[1];
+                    EXP_INT_TABLE_A[i + FastMath.EXP_INT_TABLE_MAX_INDEX] = tmp[0]; // #1
+                    EXP_INT_TABLE_B[i + FastMath.EXP_INT_TABLE_MAX_INDEX] = tmp[1]; // #1
 
                     if (i != 0) {
                         // Negative integer powers
@@ -4214,28 +4245,33 @@ public class FastMath {
                     }
                 }
             } else {
-                EXP_INT_TABLE_A = FastMathLiteralArrays.loadExpIntA();
-                EXP_INT_TABLE_B = FastMathLiteralArrays.loadExpIntB();
+                EXP_INT_TABLE_A = FastMathLiteralArrays.loadExpIntA(); // #2
+                EXP_INT_TABLE_B = FastMathLiteralArrays.loadExpIntB(); // #3
             }
         }
     }
 
     /** Enclose large data table in nested static class so it's only loaded on first access. */
+    @SuppressWarnings({"index:array.access.unsafe.high", "index:assignment.type.incompatible", "value:assignment.type.incompatible"}) /*
+        #1: Both the arrays are defined with the same length
+        #2: FastMathLiteralArrays.loadExpIntA() returns the clone of EXP_INT_TABLE_A
+        #3: FastMathLiteralArrays.loadExpIntB() returns the clone of EXP_INT_TABLE_B
+    */
     private static class ExpFracTable {
         /** Exponential over the range of 0 - 1 in increments of 2^-10
          * exp(x/1024) =  expFracTableA[x] + expFracTableB[x].
          * 1024 = 2^10
          */
-        private static final double[] EXP_FRAC_TABLE_A;
+        private static final double @ArrayLen(1025) @SameLen("EXP_FRAC_TABLE_B") [] EXP_FRAC_TABLE_A;
         /** Exponential over the range of 0 - 1 in increments of 2^-10
          * exp(x/1024) =  expFracTableA[x] + expFracTableB[x].
          */
-        private static final double[] EXP_FRAC_TABLE_B;
+        private static final double @ArrayLen(1025) @SameLen("EXP_FRAC_TABLE_A") [] EXP_FRAC_TABLE_B;
 
         static {
             if (RECOMPUTE_TABLES_AT_RUNTIME) {
-                EXP_FRAC_TABLE_A = new double[FastMath.EXP_FRAC_TABLE_LEN];
-                EXP_FRAC_TABLE_B = new double[FastMath.EXP_FRAC_TABLE_LEN];
+                EXP_FRAC_TABLE_A = new double[FastMath.EXP_FRAC_TABLE_LEN]; // #1
+                EXP_FRAC_TABLE_B = new double[FastMath.EXP_FRAC_TABLE_LEN]; // #1
 
                 final double tmp[] = new double[2];
 
@@ -4247,8 +4283,8 @@ public class FastMath {
                     EXP_FRAC_TABLE_B[i] = tmp[1];
                 }
             } else {
-                EXP_FRAC_TABLE_A = FastMathLiteralArrays.loadExpFracA();
-                EXP_FRAC_TABLE_B = FastMathLiteralArrays.loadExpFracB();
+                EXP_FRAC_TABLE_A = FastMathLiteralArrays.loadExpFracA(); // #2
+                EXP_FRAC_TABLE_B = FastMathLiteralArrays.loadExpFracB(); // #3
             }
         }
     }
