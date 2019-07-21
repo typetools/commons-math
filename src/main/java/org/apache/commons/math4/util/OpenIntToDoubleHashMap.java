@@ -25,6 +25,9 @@ import java.util.NoSuchElementException;
 
 import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.SameLen;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.LessThan;
+import org.checkerframework.checker.index.qual.LTLengthOf;
 
 /**
  * Open addressed map from int to double.
@@ -82,7 +85,7 @@ public class OpenIntToDoubleHashMap implements Serializable {
     private int size;
 
     /** Bit mask for hash values. */
-    private int mask;
+    private @IndexFor({"this.states", "this.keys","this.values"}) int mask;
 
     /** Modifications count. */
     private transient int count;
@@ -178,24 +181,28 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param key key associated with the data
      * @return data associated with the key
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:argument.type.incompatible"}) /*
+    #1: mask is @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"}) which makes
+    index = <variable> & mask also @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"})
+    */
     public double get(final int key) {
 
         final int hash  = hashOf(key);
         int index = hash & mask;
-        if (containsKey(key, index)) {
-            return values[index];
+        if (containsKey(key, index)) { // #1
+            return values[index]; // #1
         }
 
-        if (states[index] == FREE) {
+        if (states[index] == FREE) { // #1
             return missingEntries;
         }
 
         int j = index;
-        for (int perturb = perturb(hash); states[index] != FREE; perturb >>= PERTURB_SHIFT) {
+        for (int perturb = perturb(hash); states[index] != FREE; perturb >>= PERTURB_SHIFT) { // #1
             j = probe(perturb, j);
             index = j & mask;
-            if (containsKey(key, index)) {
-                return values[index];
+            if (containsKey(key, index)) { // #1
+                return values[index]; // #1
             }
         }
 
@@ -208,23 +215,27 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param key key to check
      * @return true if a value is associated with key
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:argument.type.incompatible"}) /*
+    #1: mask is @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"}) which makes
+    index = <variable> & mask also @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"})
+    */
     public boolean containsKey(final int key) {
 
         final int hash  = hashOf(key);
         int index = hash & mask;
-        if (containsKey(key, index)) {
+        if (containsKey(key, index)) { // #1
             return true;
         }
 
-        if (states[index] == FREE) {
+        if (states[index] == FREE) { // #1
             return false;
         }
 
         int j = index;
-        for (int perturb = perturb(hash); states[index] != FREE; perturb >>= PERTURB_SHIFT) {
+        for (int perturb = perturb(hash); states[index] != FREE; perturb >>= PERTURB_SHIFT) { // #1
             j = probe(perturb, j);
             index = j & mask;
-            if (containsKey(key, index)) {
+            if (containsKey(key, index)) { // #1
                 return true;
             }
         }
@@ -270,33 +281,37 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param mask bit mask for hash values
      * @return index at which key should be inserted
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:argument.type.incompatible"}) /*
+    mask is @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"}) which makes
+    index = <variable> & mask also @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"})
+    */
     private static int findInsertionIndex(final int[] keys, final byte[] states,
                                           final int key, final int mask) {
         final int hash = hashOf(key);
         int index = hash & mask;
-        if (states[index] == FREE) {
+        if (states[index] == FREE) { // #1
             return index;
-        } else if (states[index] == FULL && keys[index] == key) {
+        } else if (states[index] == FULL && keys[index] == key) { // #1
             return changeIndexSign(index);
         }
 
         int perturb = perturb(hash);
         int j = index;
-        if (states[index] == FULL) {
+        if (states[index] == FULL) { // #1
             while (true) {
                 j = probe(perturb, j);
                 index = j & mask;
                 perturb >>= PERTURB_SHIFT;
 
-                if (states[index] != FULL || keys[index] == key) {
+                if (states[index] != FULL || keys[index] == key) { // #1
                     break;
                 }
             }
         }
 
-        if (states[index] == FREE) {
+        if (states[index] == FREE) { // #1
             return index;
-        } else if (states[index] == FULL) {
+        } else if (states[index] == FULL) { // #1
             // due to the loop exit condition,
             // if (states[index] == FULL) then keys[index] == key
             return changeIndexSign(index);
@@ -307,9 +322,9 @@ public class OpenIntToDoubleHashMap implements Serializable {
             j = probe(perturb, j);
             index = j & mask;
 
-            if (states[index] == FREE) {
+            if (states[index] == FREE) { // #1
                 return firstRemoved;
-            } else if (states[index] == FULL && keys[index] == key) {
+            } else if (states[index] == FULL && keys[index] == key) { // #1
                 return changeIndexSign(index);
             }
 
@@ -352,23 +367,27 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param key key to which the value is associated
      * @return removed value
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:argument.type.incompatible"}) /*
+    #1: mask is @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"}) which makes
+    index = <variable> & mask also @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"})
+    */
     public double remove(final int key) {
 
         final int hash  = hashOf(key);
         int index = hash & mask;
-        if (containsKey(key, index)) {
+        if (containsKey(key, index)) { // #1
             return doRemove(index);
         }
 
-        if (states[index] == FREE) {
+        if (states[index] == FREE) { // #1
             return missingEntries;
         }
 
         int j = index;
-        for (int perturb = perturb(hash); states[index] != FREE; perturb >>= PERTURB_SHIFT) {
+        for (int perturb = perturb(hash); states[index] != FREE; perturb >>= PERTURB_SHIFT) { // #1
             j = probe(perturb, j);
             index = j & mask;
-            if (containsKey(key, index)) {
+            if (containsKey(key, index)) { // #1
                 return doRemove(index);
             }
         }
@@ -384,7 +403,7 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param index index to check
      * @return true if an element is associated with key at index
      */
-    private boolean containsKey(final int key, final int index) {
+    private boolean containsKey(final int key, final @IndexFor({"this.states", "this.values"}) int index) {
         return (key != 0 || states[index] == FULL) && keys[index] == key;
     }
 
@@ -393,7 +412,7 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param index index of the element to remove
      * @return removed value
      */
-    private double doRemove(int index) {
+    private double doRemove(@IndexFor({"this.states", "this.values"}) int index) {
         keys[index]   = 0;
         states[index] = REMOVED;
         final double previous = values[index];
@@ -409,18 +428,22 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param value value to put in the map
      * @return previous value associated with the key
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) /*
+    #1: findInsertionIndex() returns (<variable> & mask) or changeIndexSign(<variable> & mask) whose magnitude is surely @LessThan({"this.values.length", "this.states.length", "this.keys.length"})
+    as mask is @LessThan({"this.values.length", "this.states", "this.keys.length"}). The possibility of negative index has been checked and then index is made positive with the same magnitude
+    */
     public double put(final int key, final double value) {
         int index = findInsertionIndex(key);
         double previous = missingEntries;
         boolean newMapping = true;
         if (index < 0) {
             index = changeIndexSign(index);
-            previous = values[index];
+            previous = values[index]; // #1
             newMapping = false;
         }
-        keys[index]   = key;
-        states[index] = FULL;
-        values[index] = value;
+        keys[index]   = key; // #1
+        states[index] = FULL; // #1
+        values[index] = value; // #1
         if (newMapping) {
             ++size;
             if (shouldGrowTable()) {
@@ -435,6 +458,11 @@ public class OpenIntToDoubleHashMap implements Serializable {
     /**
      * Grow the tables.
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:assignment.type.incompatible"}) /*
+    #1: the new arrays created have a greater length than the old arrays by #0.1, hence, states[index] will not be full,
+        hence a positive index will be returned (look at implementaion of findInsertionIndex())
+    #2: All the arrays are defined with the same length, hence the annotation is retained. Also, mask = newLength - 1 < newLength which is the length of the new arrays
+    */
     private void growTable() {
 
         final int oldLength      = states.length;
@@ -442,7 +470,7 @@ public class OpenIntToDoubleHashMap implements Serializable {
         final double[] oldValues = values;
         final byte[] oldStates   = states;
 
-        final int newLength = RESIZE_MULTIPLIER * oldLength;
+        final int newLength = RESIZE_MULTIPLIER * oldLength; // #0.1
         final int[] newKeys = new int[newLength];
         final double[] newValues = new double[newLength];
         final byte[] newStates = new byte[newLength];
@@ -451,16 +479,16 @@ public class OpenIntToDoubleHashMap implements Serializable {
             if (oldStates[i] == FULL) {
                 final int key = oldKeys[i];
                 final int index = findInsertionIndex(newKeys, newStates, key, newMask);
-                newKeys[index]   = key;
-                newValues[index] = oldValues[i];
-                newStates[index] = FULL;
+                newKeys[index]   = key; // #1
+                newValues[index] = oldValues[i]; // #1
+                newStates[index] = FULL; // #1
             }
         }
 
-        mask   = newMask;
-        keys   = newKeys;
-        values = newValues;
-        states = newStates;
+        mask   = newMask; // #2
+        keys   = newKeys; // #2
+        values = newValues; // #2
+        states = newStates; // #2
 
     }
 
@@ -490,10 +518,10 @@ public class OpenIntToDoubleHashMap implements Serializable {
         private final int referenceCount;
 
         /** Index of current element. */
-        private int current;
+        private @LTLengthOf({"this.states", "this.keys", "this.values"}) int current;
 
         /** Index of next element. */
-        private int next;
+        private @LTLengthOf(value = {"this.states", "this.keys", "this.values"}, offset = {"-1", "-1", "-1"}) int next;
 
         /**
          * Simple constructor.
@@ -560,6 +588,9 @@ public class OpenIntToDoubleHashMap implements Serializable {
          * @exception ConcurrentModificationException if the map is modified during iteration
          * @exception NoSuchElementException if there is no element left in the map
          */
+        @SuppressWarnings({"index:assignment.type.incompatible", "index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:compound.assignment.type.incompatible"}) /*
+        #1: These statement is never executed with next = states.length because when next = states.length - 1, the try catch block makes next = -2
+        */
         public void advance()
             throws ConcurrentModificationException, NoSuchElementException {
 
@@ -568,11 +599,11 @@ public class OpenIntToDoubleHashMap implements Serializable {
             }
 
             // advance on step
-            current = next;
+            current = next; // #1
 
             // prepare next step
             try {
-                while (states[++next] != FULL) { // NOPMD
+                while (states[++next] != FULL) { // NOPMD #1
                     // nothing to do
                 }
             } catch (ArrayIndexOutOfBoundsException e) {

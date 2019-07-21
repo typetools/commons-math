@@ -1177,6 +1177,9 @@ public class FastMath {
      * @param hiPrec extra bits of precision on output (To Be Confirmed)
      * @return log(x)
      */
+    @SuppressWarnings({"index:array.access.unsafe.high"}) /*
+    #1: Even if x = Double.MAX_VALUE, (int)((bits & 0x000ffc0000000000L) >> 42) evaluates to 1023 and LN_MANT.length = 1024
+    */
     private static double log(final double x, final double @ArrayLen(2) [] hiPrec) {
         if (x==0) { // Handle special case of +0/-0
             return Double.NEGATIVE_INFINITY;
@@ -1272,7 +1275,7 @@ public class FastMath {
         }
 
         // lnm is a log of a number in the range of 1.0 - 2.0, so 0 <= lnm < ln(2)
-        final double[] lnm = lnMant.LN_MANT[(int)((bits & 0x000ffc0000000000L) >> 42)];
+        final double[] lnm = lnMant.LN_MANT[(int)((bits & 0x000ffc0000000000L) >> 42)]; // #1
 
         /*
     double epsilon = x / Double.longBitsToDouble(bits & 0xfffffc0000000000L);
@@ -1366,8 +1369,8 @@ public class FastMath {
         //return lnzb + lnm[1] + ln2B*exp + lnza + lnm[0] + ln2A*exp;
         double a = LN_2_A*exp;
         double b = 0.0;
-        double c = a+lnm[0];
-        double d = -(c-a-lnm[0]);
+        double c = a+lnm[0]; // #2
+        double d = -(c-a-lnm[0]); // #2
         a = c;
         b += d;
 
@@ -1381,8 +1384,8 @@ public class FastMath {
         a = c;
         b += d;
 
-        c = a + lnm[1];
-        d = -(c - a - lnm[1]);
+        c = a + lnm[1]; // #2
+        d = -(c - a - lnm[1]); // #2
         a = c;
         b += d;
 
@@ -2120,7 +2123,10 @@ static double pi_half = PI / 2;
      * @param x number to reduce
      * @param result placeholder where to put the result
      */
-    private static void reducePayneHanek(@Positive double x, double result @ArrayLen(3) [])
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) /*
+    #1: x > 3294198.0 everywhere this function is called, which makes idx 0 for all the x it is called with, hence idx, idx + 1, idx + 2 is @IndexFor("RECIP_2PI"), as RECIP_2PI.length = 18
+    */
+    private static void reducePayneHanek(double x, double result @ArrayLen(3) [])
     {
         /* Convert input double to bits */
         long inbits = Double.doubleToRawLongBits(x);
@@ -2142,14 +2148,14 @@ static double pi_half = PI / 2;
         int shift = exponent - (idx << 6);
 
         if (shift != 0) {
-            shpi0 = (idx == 0) ? 0 : (RECIP_2PI[idx-1] << shift);
-            shpi0 |= RECIP_2PI[idx] >>> (64-shift);
-            shpiA = (RECIP_2PI[idx] << shift) | (RECIP_2PI[idx+1] >>> (64-shift));
-            shpiB = (RECIP_2PI[idx+1] << shift) | (RECIP_2PI[idx+2] >>> (64-shift));
+            shpi0 = (idx == 0) ? 0 : (RECIP_2PI[idx-1] << shift); // #1
+            shpi0 |= RECIP_2PI[idx] >>> (64-shift); // #1
+            shpiA = (RECIP_2PI[idx] << shift) | (RECIP_2PI[idx+1] >>> (64-shift)); // #1
+            shpiB = (RECIP_2PI[idx+1] << shift) | (RECIP_2PI[idx+2] >>> (64-shift)); // #1
         } else {
-            shpi0 = (idx == 0) ? 0 : RECIP_2PI[idx-1];
-            shpiA = RECIP_2PI[idx];
-            shpiB = RECIP_2PI[idx+1];
+            shpi0 = (idx == 0) ? 0 : RECIP_2PI[idx-1]; // #1
+            shpiA = RECIP_2PI[idx]; // #1
+            shpiB = RECIP_2PI[idx+1]; // #1
         }
 
         /* Multiply input by shpiA */
@@ -2409,6 +2415,10 @@ static double pi_half = PI / 2;
      * @param x Argument.
      * @return cos(x)
      */
+    @SuppressWarnings("index:argument.type.incompatible") /*
+    #1: xa can be calculated from two different methods reducePayneHanek or CodyWaite,
+    but both give remainders after dividing by pi/2, hence xa < pi/2
+    */
     public static double cos(double x) {
         int quadrant = 0;
 
@@ -2445,13 +2455,13 @@ static double pi_half = PI / 2;
 
         switch (quadrant) {
             case 0:
-                return cosQ(xa, xb);
+                return cosQ(xa, xb); // #1
             case 1:
-                return -sinQ(xa, xb);
+                return -sinQ(xa, xb); // #1
             case 2:
-                return -cosQ(xa, xb);
+                return -cosQ(xa, xb); // #1
             case 3:
-                return sinQ(xa, xb);
+                return sinQ(xa, xb); // #1s
             default:
                 return Double.NaN;
         }
@@ -2463,6 +2473,12 @@ static double pi_half = PI / 2;
      * @param x Argument.
      * @return tan(x)
      */
+    @SuppressWarnings("index:argument.type.incompatible") /*
+    There are three ways to estimate xa, reducePayneHanek, CodyWaite and the snippet following #0.1.
+    First two give the remainder when dividing by pi/2, hence xa < pi/2 in these cases.
+    In #0.1, 1.5 < xa <= pi/2, and xa is eventually evaluated as pi2a - xa - pi2a + xa + pi2a - xa + pi2b - xb,
+    where pi2a = 1.5707963267948966 and xb = 0.0. Hence, the evaluated value is 1.5707963267948966 - xa + 6.123233995736766E-17 which is less than pi/2 and @NonNegative as well
+    */
     public static double tan(double x) {
         boolean negative = false;
         int quadrant = 0;
@@ -2505,7 +2521,7 @@ static double pi_half = PI / 2;
             xb = cw.getRemB();
         }
 
-        if (xa > 1.5) {
+        if (xa > 1.5) { // #0.1
             // Accuracy suffers between 1.5 and PI/2
             final double pi2a = 1.5707963267948966;
             final double pi2b = 6.123233995736766E-17;
@@ -2522,9 +2538,9 @@ static double pi_half = PI / 2;
 
         double result;
         if ((quadrant & 1) == 0) {
-            result = tanQ(xa, xb, false);
+            result = tanQ(xa, xb, false); // #1
         } else {
-            result = -tanQ(xa, xb, true);
+            result = -tanQ(xa, xb, true); // #1
         }
 
         if (negative) {
@@ -4209,9 +4225,9 @@ static double pi_half = PI / 2;
 
     /** Enclose large data table in nested static class so it's only loaded on first access. */
     @SuppressWarnings({"index:array.access.unsafe.high", "value:assignment.type.incompatible"}) /*
-        #1: EXP_INT_TABLE_A and EXP_INT_TABLE_B have length 2 * EXP_INT_TABLE_MAX_INDEX, hence EXP_INT_TABLE_MAX_INDEX + EXP_INT_TABLE_MAX_INDEX - 1 is @IndexFor for both the arrays
-        #2: FastMathLiteralArrays.loadExpIntA() returns the clone of EXP_INT_TABLE_A
-        #3: FastMathLiteralArrays.loadExpIntB() returns the clone of EXP_INT_TABLE_B
+    #1: EXP_INT_TABLE_A and EXP_INT_TABLE_B have length 2 * EXP_INT_TABLE_MAX_INDEX, hence EXP_INT_TABLE_MAX_INDEX + EXP_INT_TABLE_MAX_INDEX - 1 is @IndexFor for both the arrays
+    #2: FastMathLiteralArrays.loadExpIntA() returns the clone of EXP_INT_TABLE_A
+    #3: FastMathLiteralArrays.loadExpIntB() returns the clone of EXP_INT_TABLE_B
     */
     private static class ExpIntTable {
         /** Exponential evaluated at integer values,
@@ -4253,9 +4269,9 @@ static double pi_half = PI / 2;
 
     /** Enclose large data table in nested static class so it's only loaded on first access. */
     @SuppressWarnings({"index:array.access.unsafe.high", "index:assignment.type.incompatible", "value:assignment.type.incompatible"}) /*
-        #1: Both the arrays are defined with the same length
-        #2: FastMathLiteralArrays.loadExpIntA() returns the clone of EXP_INT_TABLE_A
-        #3: FastMathLiteralArrays.loadExpIntB() returns the clone of EXP_INT_TABLE_B
+    #1: Both the arrays are defined with the same length
+    #2: FastMathLiteralArrays.loadExpIntA() returns the clone of EXP_INT_TABLE_A
+    #3: FastMathLiteralArrays.loadExpIntB() returns the clone of EXP_INT_TABLE_B
     */
     private static class ExpFracTable {
         /** Exponential over the range of 0 - 1 in increments of 2^-10
@@ -4296,7 +4312,7 @@ static double pi_half = PI / 2;
 
         static {
             if (RECOMPUTE_TABLES_AT_RUNTIME) {
-                LN_MANT = new double[FastMath.LN_MANT_LEN][];
+                LN_MANT = new double[FastMath.LN_MANT_LEN] @ArrayLen(2) [];
 
                 // Populate lnMant table
                 for (int i = 0; i < LN_MANT.length; i++) {

@@ -20,6 +20,8 @@ import java.io.PrintStream;
 
 import org.apache.commons.math4.exception.DimensionMismatchException;
 
+import org.checkerframework.common.value.qual.ArrayLen;
+
 /** Class used to compute the classical functions tables.
  * @since 3.0
  */
@@ -546,7 +548,7 @@ class FastMathCalc {
      * @param xi number from which log is requested
      * @return log(xi)
      */
-    static double[] slowLog(double xi) {
+    static double @ArrayLen(2) [] slowLog(double xi) {
         double x[] = new double[2];
         double x2[] = new double[2];
         double y[] = new double[2];
