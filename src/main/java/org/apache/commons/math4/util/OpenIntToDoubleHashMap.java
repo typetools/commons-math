@@ -478,7 +478,7 @@ public class OpenIntToDoubleHashMap implements Serializable {
         for (int i = 0; i < oldLength; ++i) {
             if (oldStates[i] == FULL) {
                 final int key = oldKeys[i];
-                final int index = final ndInsertionIndex(newKeys, newStates, key, newMask);
+                final int index = findInsertionIndex(newKeys, newStates, key, newMask);
                 newKeys[index]   = key; // #1
                 newValues[index] = oldValues[i]; // #1
                 newStates[index] = FULL; // #1
