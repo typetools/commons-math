@@ -403,7 +403,7 @@ public class OpenIntToDoubleHashMap implements Serializable {
      * @param index index to check
      * @return true if an element is associated with key at index
      */
-    private boolean containsKey(final int key, final @IndexFor({"this.states", "this.values"}) int index) {
+    private boolean containsKey(final int key, final @IndexFor({"this.states", "this.values", "this.keys"}) int index) {
         return (key != 0 || states[index] == FULL) && keys[index] == key;
     }
 
