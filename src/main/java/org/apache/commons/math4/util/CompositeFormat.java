@@ -168,7 +168,7 @@ public class CompositeFormat {
      * @param pos input/output parsing parameter.
      * @return true if the expected string was there
      */
-    @SuppressWarnings("index:argument.type.incompatible") // The substring function is called only when the previous two condition fail, i.e, only when startIndex < source.length() && endIndex <= source.length()
+    @SuppressWarnings("index:argument.type.incompatible") // pos.getIndex() is @NonNegative https://github.com/typetools/checker-framework/pull/2604
     public static boolean parseFixedstring(final String source,
                                            final String expected,
                                            final ParsePosition pos) {
