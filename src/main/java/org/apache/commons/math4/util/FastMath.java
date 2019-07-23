@@ -880,7 +880,8 @@ public class FastMath {
      * @return exp(x)
      */
     @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) /*
-    #1: EXP_INT_TABLE_MAX_INDEX is @NonNegative and @LTLengthOf(value = {"ExpIntTable.EXP_INT_TABLE_A","ExpIntTable.EXP_INT_TABLE_B"}, offset = {"749", "749"}) as annotated
+    #1: Previous if and return statements ensure intVal is in the range [-709, 709], so EXP_INT_TABLE_MAX_INDEX+intVal has a maximum value = 750 + 709 = 1459
+        and minimum value = 750 - 709 = 41. EXP_INT_TABLE_A and EXP_INT_TABLE_B both have a length 1500
     #2: intfrac is @NonNegative and <= 1024 by #0.1 and EXP_FRAC_TABLE_A and EXP_FRAC_TABLE_B are ArrayLen(1025)
     */
     private static double exp(double x, double extra, double @ArrayLen(2) [] hiPrec) {
@@ -1275,7 +1276,7 @@ public class FastMath {
         }
 
         // lnm is a log of a number in the range of 1.0 - 2.0, so 0 <= lnm < ln(2)
-        final double[] lnm = lnMant.LN_MANT[(int)((bits & 0x000ffc0000000000L) >> 42)]; // #1
+        final double @ArrayLen(2) [] lnm = lnMant.LN_MANT[(int)((bits & 0x000ffc0000000000L) >> 42)]; // #1
 
         /*
     double epsilon = x / Double.longBitsToDouble(bits & 0xfffffc0000000000L);
@@ -1369,8 +1370,8 @@ public class FastMath {
         //return lnzb + lnm[1] + ln2B*exp + lnza + lnm[0] + ln2A*exp;
         double a = LN_2_A*exp;
         double b = 0.0;
-        double c = a+lnm[0]; // #2
-        double d = -(c-a-lnm[0]); // #2
+        double c = a+lnm[0];
+        double d = -(c-a-lnm[0]);
         a = c;
         b += d;
 
@@ -1384,8 +1385,8 @@ public class FastMath {
         a = c;
         b += d;
 
-        c = a + lnm[1]; // #2
-        d = -(c - a - lnm[1]); // #2
+        c = a + lnm[1];
+        d = -(c - a - lnm[1]);
         a = c;
         b += d;
 
@@ -4226,8 +4227,6 @@ static double pi_half = PI / 2;
     /** Enclose large data table in nested static class so it's only loaded on first access. */
     @SuppressWarnings({"index:array.access.unsafe.high", "value:assignment.type.incompatible"}) /*
     #1: EXP_INT_TABLE_A and EXP_INT_TABLE_B have length 2 * EXP_INT_TABLE_MAX_INDEX, hence EXP_INT_TABLE_MAX_INDEX + EXP_INT_TABLE_MAX_INDEX - 1 is @IndexFor for both the arrays
-    #2: FastMathLiteralArrays.loadExpIntA() returns the clone of EXP_INT_TABLE_A
-    #3: FastMathLiteralArrays.loadExpIntB() returns the clone of EXP_INT_TABLE_B
     */
     private static class ExpIntTable {
         /** Exponential evaluated at integer values,
@@ -4250,8 +4249,8 @@ static double pi_half = PI / 2;
                 // Populate expIntTable
                 for (int i = 0; i < FastMath.EXP_INT_TABLE_MAX_INDEX; i++) {
                     FastMathCalc.expint(i, tmp);
-                    EXP_INT_TABLE_A[i + FastMath.EXP_INT_TABLE_MAX_INDEX] = tmp[0]; // #1
-                    EXP_INT_TABLE_B[i + FastMath.EXP_INT_TABLE_MAX_INDEX] = tmp[1]; // #1
+                    EXP_INT_TABLE_A[i + FastMath.EXP_INT_TABLE_MAX_INDEX] = tmp[0];
+                    EXP_INT_TABLE_B[i + FastMath.EXP_INT_TABLE_MAX_INDEX] = tmp[1];
 
                     if (i != 0) {
                         // Negative integer powers
@@ -4261,8 +4260,8 @@ static double pi_half = PI / 2;
                     }
                 }
             } else {
-                EXP_INT_TABLE_A = FastMathLiteralArrays.loadExpIntA(); // #2
-                EXP_INT_TABLE_B = FastMathLiteralArrays.loadExpIntB(); // #3
+                EXP_INT_TABLE_A = FastMathLiteralArrays.loadExpIntA();
+                EXP_INT_TABLE_B = FastMathLiteralArrays.loadExpIntB();
             }
         }
     }
@@ -4308,11 +4307,11 @@ static double pi_half = PI / 2;
     /** Enclose large data table in nested static class so it's only loaded on first access. */
     private static class lnMant {
         /** Extended precision logarithm table over the range 1 - 2 in increments of 2^-10. */
-        private static final double[][] LN_MANT;
+        private static final double[] @ArrayLen(2) [] LN_MANT;
 
         static {
             if (RECOMPUTE_TABLES_AT_RUNTIME) {
-                LN_MANT = new double[FastMath.LN_MANT_LEN] @ArrayLen(2) [];
+                LN_MANT = new double[FastMath.LN_MANT_LEN][];
 
                 // Populate lnMant table
                 for (int i = 0; i < LN_MANT.length; i++) {
