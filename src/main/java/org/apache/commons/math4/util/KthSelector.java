@@ -87,11 +87,10 @@ public class KthSelector implements Serializable {
     @SuppressWarnings({"index:array.access.unsafe.low"}) /*
     #1: node is always @NonNegative as it is changed only in #0.1 where it is minimum of 2*node + 1(or 2) and either pivotsHeap.length or end
         pivotsHeap.length is @NonNegative as it is a length, end is also @NonNegative as it is initialized 0 and changed only in #0.2 where end = pivot >= k that is @NonNegative
-    #3: begin and end are @NonNegative as it is initialised with @NonNegative values in #0.3 and changed to only @NonNegative values in #0.2 and #0.4
     */
     public double select(final double @MinLen(1) [] work, final @IndexFor("#1") int[] pivotsHeap, final @IndexFor("#1") int k) {
-        @Positive @LTEqLengthOf("work") int end = work.length; // #0.3
-        @NonNegative @LessThan("end") int begin = 0; // #0.3
+        @Positive @LTEqLengthOf("work") int end = work.length;
+        @NonNegative @LessThan("end") int begin = 0;
         int node = 0;
         final boolean usePivotsHeap = pivotsHeap != null;
         while (end - begin > MIN_SELECT_SIZE) {
@@ -104,7 +103,7 @@ public class KthSelector implements Serializable {
                 pivot = pivotsHeap[node]; // #1
             } else {
                 // select a pivot and partition work array around it
-                pivot = partition(work, begin, end, pivotingStrategy.pivotIndex(work, begin, end)); // #2
+                pivot = partition(work, begin, end, pivotingStrategy.pivotIndex(work, begin, end));
                 if (usePivotsHeap && node < pivotsHeap.length) {
                     pivotsHeap[node] = pivot; // #1
                 }
