@@ -699,7 +699,7 @@ public class MathArrays {
      * @throws NullArgumentException if {@code x} or any {@code y} is null
      * @since 3.0
      */
-    @SuppressWarnings({"index:array.access.unsafe.high", "index:array.access.unsafe.low"}) // #1: #0.1, #0.2 and #0.3 ensures that yInPlace.length = len and indices are index of certain keys, hence a valid index
+    @SuppressWarnings({"index:array.access.unsafe.high", "index:array.access.unsafe.low"}) // #1: #0.1, #0.2 and #0.3 ensures that yInPlace.length = len and indices are the index of certain keys, hence a valid index
     public static void sortInPlace(double[] x,
                                    final OrderDirection dir,
                                    double[] ... yList)
