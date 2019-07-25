@@ -431,7 +431,7 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
      * @return previous value associated with the key
      */
     @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) /*
-    #1: findInsertionIndex() returns (<variable> & mask) or changeIndexSign(<variable> & mask) whose magnitude is surely @LessThan({"this.values.length", "this.states.length", "this.keys.length"})
+    #1: findInsertionIndex() returns (<variable> & mask) or changeIndexSign(<variable> & mask) whose magnitude is @LessThan({"this.values.length", "this.states.length", "this.keys.length"})
     as mask is @LessThan({"this.values.length", "this.states", "this.keys.length"}). The possibility of negative index has been checked and then index is made positive with the same magnitude
     */
     public T put(final int key, final T value) {
