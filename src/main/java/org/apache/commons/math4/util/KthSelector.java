@@ -83,7 +83,7 @@ public class KthSelector implements Serializable {
     @SuppressWarnings({"index:array.access.unsafe.low", "index:argument.type.incompatible"}) /*
     #1: node is always @NonNegative as it is changed only in #0.1 where it is minimum of 2*node + 1(or 2) and either pivotsHeap.length or end
         pivotsHeap.length is @NonNegative as it is a length, end is also @NonNegative as it is initialized 0 and changed only in #0.2 where end = pivot >= k that is @NonNegative
-    #3: begin and end are @NonNegative as it is initialised with @NonNegative values in #0. and changed to only @NonNegative values in #0.2 and #0.4
+    #3: begin and end are @NonNegative as they are initialised with @NonNegative values in #0.3 and changed to only @NonNegative values in #0.2 and #0.4
     */
     public double select(final double[] work, final int[] pivotsHeap, final @IndexFor("#1") int k) {
         int begin = 0; // #0.3
