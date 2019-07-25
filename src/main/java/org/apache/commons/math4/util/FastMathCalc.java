@@ -101,7 +101,7 @@ class FastMathCalc {
      * @param TANGENT_TABLE_A table of the most significant part of the tangents
      * @param TANGENT_TABLE_B table of the most significant part of the tangents
      */
-    @SuppressWarnings({"unused", "index:array.access.unsafe.high"}) // #1: i is odd as checked by the previous if-else, so i/2 + 1 < SINE_TABLE_LEN
+    @SuppressWarnings({"unused", "index:array.access.unsafe.high"}) // #1: i is odd as checked by the previous if-else, also i < SINE_TABLE_LEN, so i/2 + 1 < SINE_TABLE_LEN
     private static void buildSinCosTables(double @MinLen(8) [] SINE_TABLE_A, double @MinLen(8) [] SINE_TABLE_B,
                                           double @MinLen(8) [] COSINE_TABLE_A, double @MinLen(8) [] COSINE_TABLE_B,
                                           @LengthOf({"#1", "#2", "#3", "#4", "#6", "#7"}) int SINE_TABLE_LEN, double @MinLen(8)[] TANGENT_TABLE_A, double @MinLen(8) [] TANGENT_TABLE_B) {

@@ -590,7 +590,7 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
          * @exception ConcurrentModificationException if the map is modified during iteration
          * @exception NoSuchElementException if there is no element left in the map
          */
-        @SuppressWarnings({"index:assignment.type.incompatible", "index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:compound.assignment.type.incompatible"}) /*
+        @SuppressWarnings({"index:assignment.type.incompatible", "index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:unary.increment.type.incompatible"}) /*
         #1: These statement is never executed with next = states.length because when next = states.length - 1, the try catch block makes next = -2
         */
         public void advance()

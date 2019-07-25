@@ -43,7 +43,7 @@ public interface PivotingStrategyInterface {
      * first and the last element of the array slice
      * @throws MathIllegalArgumentException when indices exceeds range
      */
-    int pivotIndex(double[] work, @LessThan("#3") @IndexFor("#1") int begin, @Positive @LTEqLengthOf("#1") int end)
+    @IndexFor("#1") int pivotIndex(double[] work, @LessThan("#3") @IndexFor("#1") int begin, @Positive @LTEqLengthOf("#1") int end)
         throws MathIllegalArgumentException;
 
 }
