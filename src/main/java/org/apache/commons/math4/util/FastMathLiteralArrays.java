@@ -6139,7 +6139,8 @@ class FastMathLiteralArrays {
      *
      * @return a clone of the data array.
      */
-    static double[] loadExpIntA() {
+    @SuppressWarnings("value:return.type.incompatible") // clone() returns the same array as it is called upon, hence same length
+    static double @ArrayLen(1500) [] loadExpIntA() {
         return EXP_INT_A.clone();
     }
     /**
@@ -6147,7 +6148,8 @@ class FastMathLiteralArrays {
      *
      * @return a clone of the data array.
      */
-    static double[] loadExpIntB() {
+    @SuppressWarnings("value:return.type.incompatible") // clone() returns the same array as it is called upon, hence same length
+    static double @ArrayLen(1500) [] loadExpIntB() {
         return EXP_INT_B.clone();
     }
     /**
