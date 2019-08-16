@@ -86,9 +86,9 @@ public class KthSelector implements Serializable {
     #3: begin and end are @NonNegative as they are initialised with @NonNegative values in #0.3 and changed to only @NonNegative values in #0.2 and #0.4
     */
     public double select(final double[] work, final int[] pivotsHeap, final @IndexFor("#1") int k) {
-        int begin = 0; // #0.3
-        int end = work.length; // #0.3
-        int node = 0;
+        @NonNegative int begin = 0; // #0.3
+        @NonNegative int end = work.length; // #0.3
+        @NonNegative int node = 0;
         final boolean usePivotsHeap = pivotsHeap != null;
         while (end - begin > MIN_SELECT_SIZE) {
             final int pivot;
