@@ -17,7 +17,6 @@
 package org.apache.commons.math4.util;
 
 import java.io.PrintStream;
-import java.util.Scanner;
 
 import org.apache.commons.numbers.core.Precision;
 import org.apache.commons.math4.exception.MathArithmeticException;
@@ -1830,9 +1829,8 @@ public class FastMath {
      *  @param xb extra bits for x (may be 0.0)
      *  @return sin(xa + xb)
      */
-static double pi_half = PI / 2;
-    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) // #1: By #0.1, idx can have a maximum value of 13 (as xa < pi / 2) and all the arrays accessed have length 14
-    private static double sinQ(@NonNegative @LessThan("pi_half") double xa, double xb) {
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) // #1: By #0.1, idx can have a maximum value of 13 (as xa < pi / 2 as in the documentation) and all the arrays accessed have length 14
+    private static double sinQ(@NonNegative double xa, double xb) {
         int idx = (int) ((xa * 8.0) + 0.5); // #0.1
         final double epsilon = xa - EIGHTHS[idx]; //idx*0.125; #1
 
@@ -1956,12 +1954,12 @@ static double pi_half = PI / 2;
      *  @param xb extra bits for x (may be 0.0)
      *  @return cos(xa + xb)
      */
-    private static double cosQ(@NonNegative @LessThan("pi_half") double xa, double xb) {
+    private static double cosQ(@NonNegative double xa, double xb) {
         final double pi2a = 1.5707963267948966;
         final double pi2b = 6.123233995736766E-17;
 
-        @SuppressWarnings("index:assignment.type.incompatible") // pi2a is pi_half and xa < pi_half and @NonNegative, hence pi2a - xa is @NonNegative and @LessThan("pi_half")
-        final @NonNegative @LessThan("pi_half") double a = pi2a - xa;
+        @SuppressWarnings("index:assignment.type.incompatible") // pi2a is pi_half and xa < pi_half as xa is in the first quadrant and @NonNegative, hence pi2a - xa is @NonNegative
+        final @NonNegative double a = pi2a - xa;
         double b = -(a - pi2a + xa);
         b += pi2b - xb;
 
@@ -1976,10 +1974,10 @@ static double pi_half = PI / 2;
      *  @param cotanFlag if true, compute the cotangent instead of the tangent
      *  @return tan(xa+xb) (or cotangent, depending on cotanFlag)
      */
-    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) // #1: By #0.1, idx can have a maximum value of 13 (as xa < pi / 2) and all the arrays accessed have length 14
-    private static double tanQ(@NonNegative @LessThan("pi_half") double xa, double xb, boolean cotanFlag) {
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) // #1: By #0.1, idx can have a maximum value of 13 (as xa < pi / 2 as per the documentation) and all the arrays accessed have length 14
+    private static double tanQ(@NonNegative double xa, double xb, boolean cotanFlag) {
 
-        int idx = (int) ((xa * 8.0) + 0.5);
+        int idx = (int) ((xa * 8.0) + 0.5); // #0.1
         final double epsilon = xa - EIGHTHS[idx]; //idx*0.125; #1
 
         // Table lookups
@@ -2567,7 +2565,7 @@ static double pi_half = PI / 2;
      * @param leftPlane if true, result angle must be put in the left half plane
      * @return atan(xa + xb) (or angle shifted by {@code PI} if leftPlane is true)
      */
-    @SuppressWarnings("index:assignment.type.incompatible") /*
+    @SuppressWarnings({"index:assignment.type.incompatible", "value:assignment.type.incompatible"}) /*
     #1, #2: idx is always @NonNegative and can have a maximum value of 13 (as 0 <= oneOverXa <= 1 in #2 and 0 <= xa <= 1 in #1)
     */
     private static double atan(double xa, double xb, boolean leftPlane) {
