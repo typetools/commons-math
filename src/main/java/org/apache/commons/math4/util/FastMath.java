@@ -17,7 +17,7 @@
 package org.apache.commons.math4.util;
 
 import java.io.PrintStream;
-import java.util.*;
+import java.util.Scanner;
 
 import org.apache.commons.numbers.core.Precision;
 import org.apache.commons.math4.exception.MathArithmeticException;
@@ -29,6 +29,7 @@ import org.checkerframework.checker.index.qual.NonNegative;
 import org.checkerframework.checker.index.qual.LTLengthOf;
 import org.checkerframework.checker.index.qual.LessThan;
 import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.common.value.qual.IntRange;
 
 /**
  * Faster, more accurate, portable alternative to {@link Math} and
@@ -2566,8 +2567,8 @@ static double pi_half = PI / 2;
      * @param leftPlane if true, result angle must be put in the left half plane
      * @return atan(xa + xb) (or angle shifted by {@code PI} if leftPlane is true)
      */
-    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) /* #1: By #0.1, idx is always @NonNegative
-    and can have a maximum value of 13 (as 0 <= oneOverXa <= 1) and all the arrays accessed have length 14
+    @SuppressWarnings("index:assignment.type.incompatible") /*
+    #1, #2: idx is always @NonNegative and can have a maximum value of 13 (as 0 <= oneOverXa <= 1 in #2 and 0 <= xa <= 1 in #1)
     */
     private static double atan(double xa, double xb, boolean leftPlane) {
         if (xa == 0.0) { // Matches +/- 0.0; return correct sign
@@ -2589,16 +2590,16 @@ static double pi_half = PI / 2;
         }
 
         /* Estimate the closest tabulated arctan value, compute eps = xa-tangentTable */
-        final int idx;
+        final @IntRange(from=0, to=13) int idx;
         if (xa < 1) {
-            idx = (int) (((-1.7168146928204136 * xa * xa + 8.0) * xa) + 0.5);
+            idx = (int) (((-1.7168146928204136 * xa * xa + 8.0) * xa) + 0.5); // #1
         } else {
             final double oneOverXa = 1 / xa;
-            idx = (int) (-((-1.7168146928204136 * oneOverXa * oneOverXa + 8.0) * oneOverXa) + 13.07); // #0.1
+            idx = (int) (-((-1.7168146928204136 * oneOverXa * oneOverXa + 8.0) * oneOverXa) + 13.07); // #2
         }
 
-        final double ttA = TANGENT_TABLE_A[idx]; // #1
-        final double ttB = TANGENT_TABLE_B[idx]; // #1
+        final double ttA = TANGENT_TABLE_A[idx];
+        final double ttB = TANGENT_TABLE_B[idx];
 
         double epsA = xa - ttA;
         double epsB = -(epsA - xa + ttA);
@@ -2684,7 +2685,7 @@ static double pi_half = PI / 2;
         /* Add in effect of epsB.   atan'(x) = 1/(1+x^2) */
         yb += epsB / (1d + epsA * epsA);
 
-        final double eighths = EIGHTHS[idx]; // #1
+        final double eighths = EIGHTHS[idx];
 
         //result = yb + eighths[idx] + ya;
         double za = eighths + ya;
