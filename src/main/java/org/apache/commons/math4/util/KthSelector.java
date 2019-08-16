@@ -137,7 +137,7 @@ public class KthSelector implements Serializable {
      * @param pivot initial index of the pivot
      * @return index of the pivot after partition
      */
-    private @NonNegative @IndexFor("#1") int partition(final double[] work, final @IndexFor("#1") int begin, final @IndexOrHigh("#1") int end, final @IndexFor("#1") int pivot) {
+    private @IndexFor("#1") int partition(final double[] work, final @IndexFor("#1") int begin, final @IndexOrHigh("#1") int end, final @IndexFor("#1") int pivot) {
 
         final double value = work[pivot];
         work[pivot] = work[begin];
