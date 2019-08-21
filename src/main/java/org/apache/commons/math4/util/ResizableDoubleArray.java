@@ -766,7 +766,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @throws ArrayIndexOutOfBoundsException if {@code index < 0}.
      */
     @Override
-    @SuppressWarnings({"index:assignment.type.incompatible", "array.access.unsafe.high", "value:argument.type.incompatible"}) /*
+    @SuppressWarnings({"index:assignment.type.incompatible", "index:array.access.unsafe.high", "value:argument.type.incompatible"}) /*
     #1: if numElements > internalArray.length - startIndex, internalArray is expanded by #0.1
     #2: Id startIndex + index >= internalArray.length, internalArray is expanded by #0.1
     #3: startIndex and index both are @NonNegative, hence startIndex + index + 1 is minimum 1
