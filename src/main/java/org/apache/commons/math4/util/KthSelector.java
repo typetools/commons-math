@@ -88,7 +88,7 @@ public class KthSelector implements Serializable {
     #1: node is always @NonNegative as it is changed only in #0.1 where it is minimum of 2*node + 1(or 2) and either pivotsHeap.length or end
         pivotsHeap.length is @NonNegative as it is a length, end is also @NonNegative as it is initialized 0 and changed only in #0.2 where end = pivot >= k that is @NonNegative
     */
-    public double select(final double[] work, final int[] pivotsHeap, final @IndexFor("#1") int k) {
+    public double select(final double[] work, final @IndexFor("#1") int[] pivotsHeap, final int k) {
         @NonNegative int begin = 0; // #0.3
         @NonNegative int end = work.length; // #0.3
         @NonNegative int node = 0;
