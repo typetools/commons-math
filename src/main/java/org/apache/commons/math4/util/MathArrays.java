@@ -1033,8 +1033,8 @@ public class MathArrays {
      * @return a new array
      * @since 3.2
      */
-    @SuppressWarnings({"unchecked","index:array.access.unsafe.high.range"}) // i < rows which is the number of rows in array
-    public static <T> T[][] buildArray(final Field<T> field, final @NonNegative int rows, final @NonNegative int columns) {
+    @SuppressWarnings({"unchecked","index:array.access.unsafe.high.range"}) // i < rows which is the number of rows in array and i >= 0 as checked by the if statement
+    public static <T> T[][] buildArray(final Field<T> field, final @NonNegative int rows, final int columns) {
         final T[][] array;
         if (columns < 0) {
             T[] dummyRow = buildArray(field, 0);
@@ -1075,7 +1075,7 @@ public class MathArrays {
     #1: j >= 0 is checked and j < xLen as j is max n + 1 - xLen where n is max xLen + hLen - 2
         k < hLen is checked
     */
-    public static double[] convolve(double[] x, double[] h)
+    public static double[] convolve(double @MinLen(1) [] x, double @MinLen(1) [] h)
         throws NullArgumentException,
                NoDataException {
         MathUtils.checkNotNull(x);
