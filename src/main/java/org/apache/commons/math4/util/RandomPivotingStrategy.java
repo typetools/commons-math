@@ -67,10 +67,11 @@ public class RandomPivotingStrategy implements PivotingStrategyInterface, Serial
      * @throws MathIllegalArgumentException when indices exceeds range
      */
     @Override
-    public int pivotIndex(final double[] work, final @LessThan("#3") @IndexFor("#1") int begin, final @Positive @LTEqLengthOf("#1") int end)
+    @SuppressWarnings("index:return.type.incompatible") // #1: begin <= begin + random.nextInt(end - begin - 1) <= begin + end - begin - 1 <= end - 1
+    public @IndexFor("#1") int pivotIndex(final double[] work, final @LessThan("#3") @IndexFor("#1") int begin, final @Positive @LTEqLengthOf("#1") int end)
         throws MathIllegalArgumentException {
         MathArrays.verifyValues(work, begin, end-begin);
-        return begin + random.nextInt(end - begin - 1);
+        return begin + random.nextInt(end - begin - 1); // #1
     }
 
     /**

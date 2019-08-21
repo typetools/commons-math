@@ -331,7 +331,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      *
      * @param value Value to be added to end of array.
      */
-    @SuppressWarnings({"index:array.access.unsafe.high","compound.assignment.type.incompatible"}) /* #1: expand() increases the length by at least 1,
+    @SuppressWarnings({"index:array.access.unsafe.high","index:unary.increment.type.incompatible"}) /* #1: expand() increases the length by at least 1,
     since this function adds elements one by one, startIndex + numElements in #1 will always be @IndexFor("internalArray")
     */
     @Override
@@ -349,7 +349,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @since 2.2
      */
     @Override
-    @SuppressWarnings({"index:argument.type.incompatible","compound.assignment.type.incompatible"}) /*
+    @SuppressWarnings({"index:argument.type.incompatible", "index:compound.assignment.type.incompatible"}) /*
     #1: numElements <= tempArray.length as tempArray.length = numElements + values.length + 1
     #2: values.length <= tempArray.length - numElements = numElements + values.length + 1 - values.length = values.length + 1
     #3: internalArray's new length = numElements + values.length + 1 nad startIndex = 0, hence numElements + values.length < internalArray.length - startIndex + 1
