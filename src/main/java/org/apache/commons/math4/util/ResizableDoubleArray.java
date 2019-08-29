@@ -275,7 +275,7 @@ public class ResizableDoubleArray implements DoubleArray, Serializable {
      * @throws MathIllegalArgumentException if the parameters are not valid.
      * @throws NullArgumentException if expansionMode is null
      */
-    @SuppressWarnings("index:assignment.type.incompatible") // internalArray is @MinLen(1) and startIndex is @IndexFor("internalArray"), hence 0 < 1 - 0 + 1
+    @SuppressWarnings("index:assignment.type.incompatible") // #1: internalArray is @MinLen(1) and startIndex is @IndexFor("internalArray"), hence 0 < 1 - 0 + 1
     public ResizableDoubleArray(int initialCapacity,
                                 double expansionFactor,
                                 double contractionCriterion,
