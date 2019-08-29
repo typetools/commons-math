@@ -17,6 +17,8 @@
 
 package org.apache.commons.math4.util;
 
+import org.checkerframework.common.value.qual.ArrayLen;
+
 /**
  * Utility class for loading tabulated data used by {@link FastMath}.
  *
@@ -5099,7 +5101,7 @@ class FastMathLiteralArrays {
     };
 
     /** Extended precision logarithm table over the range 1 - 2 in increments of 2^-10. */
-    private static final double[][] LN_MANT = new double[][] {
+    private static final double @ArrayLen(1024) [] @ArrayLen(2) [] LN_MANT = new double[][] {
       {+0.0d,                   +0.0d,                   }, // 0
       {+9.760860120877624E-4d,  -3.903230345984362E-11d, }, // 1
       {+0.0019512202125042677d, -8.124251825289188E-11d, }, // 2
@@ -6137,7 +6139,8 @@ class FastMathLiteralArrays {
      *
      * @return a clone of the data array.
      */
-    static double[] loadExpIntA() {
+    @SuppressWarnings("value:return.type.incompatible") // clone() returns the same array as it is called upon, hence same length
+    static double @ArrayLen(1500) [] loadExpIntA() {
         return EXP_INT_A.clone();
     }
     /**
@@ -6145,7 +6148,8 @@ class FastMathLiteralArrays {
      *
      * @return a clone of the data array.
      */
-    static double[] loadExpIntB() {
+    @SuppressWarnings("value:return.type.incompatible") // clone() returns the same array as it is called upon, hence same length
+    static double @ArrayLen(1500) [] loadExpIntB() {
         return EXP_INT_B.clone();
     }
     /**
@@ -6169,7 +6173,8 @@ class FastMathLiteralArrays {
      *
      * @return a clone of the data array.
      */
-    static double[][] loadLnMant() {
+    @SuppressWarnings("value:return.type.incompatible") // clone() returns array of the same length as LN_MANT
+    static double @ArrayLen(1024) [] @ArrayLen(2) [] loadLnMant() {
         return LN_MANT.clone();
     }
 }

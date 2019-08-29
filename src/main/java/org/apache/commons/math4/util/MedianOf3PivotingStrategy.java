@@ -20,6 +20,11 @@ import java.io.Serializable;
 
 import org.apache.commons.math4.exception.MathIllegalArgumentException;
 
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.LessThan;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.Positive;
+
 
 /**
  * Classic median of 3 strategy given begin and end indices.
@@ -37,13 +42,18 @@ public class MedianOf3PivotingStrategy implements PivotingStrategyInterface, Ser
      * @throws MathIllegalArgumentException when indices exceeds range
      */
     @Override
-    public int pivotIndex(final double[] work, final int begin, final int end)
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:assignment.type.incompatible"}) /*
+    #1: middle = begin + (inclusiveEnd - begin) / 2 and inclusiveEnd >= begin, hence middle is @NonNegative,
+        also (begin +inclusiveEnd)/2 has to be @IndexFor("work") as the two individual variables are
+    #2: begin + (inclusiveEnd - begin) / 2 = begin/2 + inclusiveEnd/2 which is @IndexFor("work") as both begin and inclusiveEnd are @IndexFor("work") 
+    */
+    public @IndexFor("#1") int pivotIndex(final double[] work, final @LessThan("#3") @IndexFor("#1") int begin, final @Positive @LTEqLengthOf("#1") int end)
         throws MathIllegalArgumentException {
         MathArrays.verifyValues(work, begin, end-begin);
-        final int inclusiveEnd = end - 1;
-        final int middle = begin + (inclusiveEnd - begin) / 2;
+        final @IndexFor("work") int inclusiveEnd = end - 1;
+        final @IndexFor("work") int middle = begin + (inclusiveEnd - begin) / 2; // #2
         final double wBegin = work[begin];
-        final double wMiddle = work[middle];
+        final double wMiddle = work[middle]; // #1
         final double wEnd = work[inclusiveEnd];
 
         if (wBegin < wMiddle) {

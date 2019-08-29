@@ -16,6 +16,8 @@
  */
 package org.apache.commons.math4.util;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+
 
 /**
  * Provides a standard interface for double arrays.  Allows different
@@ -57,7 +59,7 @@ public interface DoubleArray {
      * @throws ArrayIndexOutOfBoundsException if <code>index</code> is less than
      *         zero.
      */
-    void setElement(int index, double value);
+    void setElement(@NonNegative int index, double value);
 
     /**
      * Adds an element to the end of this expandable array

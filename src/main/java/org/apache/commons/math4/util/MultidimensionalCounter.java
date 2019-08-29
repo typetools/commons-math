@@ -23,6 +23,12 @@ import org.apache.commons.math4.exception.DimensionMismatchException;
 import org.apache.commons.math4.exception.NotStrictlyPositiveException;
 import org.apache.commons.math4.exception.OutOfRangeException;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LessThan;
+import org.checkerframework.common.value.qual.MinLen;
+
 /**
  * Converter between unidimensional storage structure and multidimensional
  * conceptual structure.
@@ -48,7 +54,7 @@ public class MultidimensionalCounter implements Iterable<Integer> {
     /**
      * Number of dimensions.
      */
-    private final int dimension;
+    private final @IndexOrHigh({"this.size", "this.uniCounterOffset"}) int dimension;
     /**
      * Offset for each dimension.
      */
@@ -64,7 +70,7 @@ public class MultidimensionalCounter implements Iterable<Integer> {
     /**
      * Index of last dimension.
      */
-    private final int last;
+    private final @NonNegative @LessThan("this.dimension") @IndexFor("this.size") int last;
 
     /**
      * Perform iteration over the multidimensional counter.
@@ -106,16 +112,17 @@ public class MultidimensionalCounter implements Iterable<Integer> {
          * returned {@code false}.
          */
         @Override
+        @SuppressWarnings("index:array.access.unsafe.high") // #1: last is @LessThan("dimension") where dimension is counter.length, hence 0 <= i <= last is @IndexFor("counter")
         public Integer next() {
             if (!hasNext()) {
                 throw new NoSuchElementException();
             }
 
             for (int i = last; i >= 0; i--) {
-                if (counter[i] == size[i] - 1) {
-                    counter[i] = 0;
+                if (counter[i] == size[i] - 1) { // #1
+                    counter[i] = 0; // #1
                 } else {
-                    ++counter[i];
+                    ++counter[i]; // #1
                     break;
                 }
             }
@@ -151,7 +158,7 @@ public class MultidimensionalCounter implements Iterable<Integer> {
          * {@link MultidimensionalCounter#MultidimensionalCounter(int[])
          * constructor of the enclosing class}).
          */
-        public int getCount(int dim) {
+        public int getCount(@IndexFor("counter") int dim) {
             return counter[dim];
         }
 
@@ -171,11 +178,12 @@ public class MultidimensionalCounter implements Iterable<Integer> {
      * @throws NotStrictlyPositiveException if one of the sizes is
      * negative or zero.
      */
-    public MultidimensionalCounter(int ... size) throws NotStrictlyPositiveException {
-        dimension = size.length;
+    @SuppressWarnings("index:assignment.type.incompatible") // #1: uniCounterOffset has length dimension by #0.1, hence, dimension is @LTEqLengthOf("this.uniCounterOffset")
+    public MultidimensionalCounter(int @MinLen(1) ... size) throws NotStrictlyPositiveException {
         this.size = MathArrays.copyOf(size);
+        dimension = size.length; // #1:
 
-        uniCounterOffset = new int[dimension];
+        uniCounterOffset = new int[dimension]; // #0.1
 
         last = dimension - 1;
         int tS = size[last];
@@ -223,7 +231,8 @@ public class MultidimensionalCounter implements Iterable<Integer> {
      * @throws OutOfRangeException if {@code index} is not between
      * {@code 0} and the value returned by {@link #getSize()} (excluded).
      */
-    public int[] getCounts(int index) throws OutOfRangeException {
+    @SuppressWarnings("index:array.access.unsafe.high") // #1: i < last < dimension which is the length of indices and uniCounterOffset
+    public int[] getCounts(@NonNegative int index) throws OutOfRangeException {
         if (index < 0 ||
             index >= totalSize) {
             throw new OutOfRangeException(index, 0, totalSize);
@@ -234,14 +243,14 @@ public class MultidimensionalCounter implements Iterable<Integer> {
         int count = 0;
         for (int i = 0; i < last; i++) {
             int idx = 0;
-            final int offset = uniCounterOffset[i];
+            final int offset = uniCounterOffset[i]; // #1
             while (count <= index) {
                 count += offset;
                 ++idx;
             }
             --idx;
             count -= offset;
-            indices[i] = idx;
+            indices[i] = idx; // #1
         }
 
         indices[last] = index - count;

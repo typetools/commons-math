@@ -20,6 +20,11 @@ import java.io.Serializable;
 
 import org.apache.commons.math4.exception.MathIllegalArgumentException;
 
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.index.qual.LessThan;
+
 
 /**
  * A mid point strategy based on the average of begin and end indices.
@@ -38,10 +43,11 @@ public class CentralPivotingStrategy implements PivotingStrategyInterface, Seria
      * @throws MathIllegalArgumentException when indices exceeds range
      */
     @Override
-    public int pivotIndex(final double[] work, final int begin, final int end)
+    @SuppressWarnings("index:return.type.incompatible") // #1: begin + (end - begin)/2 = (begin + end)/2 where begin and end are @IndexFor("work"), hence, (begin + end)/2 is @IndexFor("work")
+    public @IndexFor("#1") int pivotIndex(final double[] work, final @LessThan("#3") @IndexFor("#1") int begin, final @Positive @LTEqLengthOf("#1") int end)
         throws MathIllegalArgumentException {
         MathArrays.verifyValues(work, begin, end-begin);
-        return begin + (end - begin)/2;
+        return begin + (end - begin)/2; // #1
     }
 
 }

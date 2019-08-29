@@ -21,6 +21,14 @@ import java.util.Arrays;
 
 import org.apache.commons.math4.exception.NullArgumentException;
 
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.Positive;
+import org.checkerframework.checker.index.qual.IndexOrHigh;
+import org.checkerframework.checker.index.qual.LessThan;
+import org.checkerframework.checker.index.qual.LTEqLengthOf;
+import org.checkerframework.common.value.qual.MinLen;
+
 
 /**
  * A Simple K<sup>th</sup> selector implementation to pick up the
@@ -76,24 +84,28 @@ public class KthSelector implements Serializable {
      * @param k the index whose value in the array is of interest
      * @return K<sup>th</sup> value
      */
-    public double select(final double[] work, final int[] pivotsHeap, final int k) {
-        int begin = 0;
-        int end = work.length;
+    @SuppressWarnings({"index:array.access.unsafe.low"}) /*
+    #1: node is always @NonNegative as it is changed only in #0.1 where it is minimum of 2*node + 1(or 2) and either pivotsHeap.length or end
+        pivotsHeap.length is @NonNegative as it is a length, end is also @NonNegative as it is initialized 0 and changed only in #0.2 where end = pivot >= k that is @NonNegative
+    */
+    public double select(final double @MinLen(1) [] work, final @IndexFor("#1") int[] pivotsHeap, final @IndexFor("#1") int k) {
+        @Positive @LTEqLengthOf("work") int end = work.length;
+        @NonNegative @LessThan("end") int begin = 0;
         int node = 0;
         final boolean usePivotsHeap = pivotsHeap != null;
         while (end - begin > MIN_SELECT_SIZE) {
-            final int pivot;
+            final @IndexFor("work") int pivot;
 
             if (usePivotsHeap && node < pivotsHeap.length &&
-                    pivotsHeap[node] >= 0) {
+                    pivotsHeap[node] >= 0) { // #1
                 // the pivot has already been found in a previous call
                 // and the array has already been partitioned around it
-                pivot = pivotsHeap[node];
+                pivot = pivotsHeap[node]; // #1
             } else {
                 // select a pivot and partition work array around it
                 pivot = partition(work, begin, end, pivotingStrategy.pivotIndex(work, begin, end));
                 if (usePivotsHeap && node < pivotsHeap.length) {
-                    pivotsHeap[node] = pivot;
+                    pivotsHeap[node] = pivot; // #1
                 }
             }
 
@@ -125,7 +137,7 @@ public class KthSelector implements Serializable {
      * @param pivot initial index of the pivot
      * @return index of the pivot after partition
      */
-    private int partition(final double[] work, final int begin, final int end, final int pivot) {
+    private @IndexFor("#1") int partition(final double[] work, final @IndexFor("#1") int begin, final @IndexOrHigh("#1") int end, final @IndexFor("#1") int pivot) {
 
         final double value = work[pivot];
         work[pivot] = work[begin];

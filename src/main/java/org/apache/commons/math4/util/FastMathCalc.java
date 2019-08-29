@@ -20,6 +20,10 @@ import java.io.PrintStream;
 
 import org.apache.commons.math4.exception.DimensionMismatchException;
 
+import org.checkerframework.common.value.qual.ArrayLen;
+import org.checkerframework.common.value.qual.MinLen;
+import org.checkerframework.checker.index.qual.LengthOf;
+
 /** Class used to compute the classical functions tables.
  * @since 3.0
  */
@@ -57,7 +61,7 @@ class FastMathCalc {
         };
 
     /** Coefficients for slowLog. */
-    private static final double LN_SPLIT_COEF[][] = {
+    private static final double LN_SPLIT_COEF[] @ArrayLen(2) [] = {
         {2.0, 0.0},
         {0.6666666269302368, 3.9736429850260626E-8},
         {0.3999999761581421, 2.3841857910019882E-8},
@@ -97,10 +101,10 @@ class FastMathCalc {
      * @param TANGENT_TABLE_A table of the most significant part of the tangents
      * @param TANGENT_TABLE_B table of the most significant part of the tangents
      */
-    @SuppressWarnings("unused")
-    private static void buildSinCosTables(double[] SINE_TABLE_A, double[] SINE_TABLE_B,
-                                          double[] COSINE_TABLE_A, double[] COSINE_TABLE_B,
-                                          int SINE_TABLE_LEN, double[] TANGENT_TABLE_A, double[] TANGENT_TABLE_B) {
+    @SuppressWarnings({"unused", "index:array.access.unsafe.high"}) // #1: i is odd as checked by the previous if-else, also i < SINE_TABLE_LEN, so i/2 + 1 < SINE_TABLE_LEN
+    private static void buildSinCosTables(double @MinLen(8) [] SINE_TABLE_A, double @MinLen(8) [] SINE_TABLE_B,
+                                          double @MinLen(8) [] COSINE_TABLE_A, double @MinLen(8) [] COSINE_TABLE_B,
+                                          @LengthOf({"#1", "#2", "#3", "#4", "#6", "#7"}) int SINE_TABLE_LEN, double @MinLen(8)[] TANGENT_TABLE_A, double @MinLen(8) [] TANGENT_TABLE_B) {
         final double result[] = new double[2];
 
         /* Use taylor series for 0 <= x <= 6/8 */
@@ -149,10 +153,10 @@ class FastMathCalc {
                 xs[1] = SINE_TABLE_B[i/2];
                 ys[0] = COSINE_TABLE_A[i/2];
                 ys[1] = COSINE_TABLE_B[i/2];
-                as[0] = SINE_TABLE_A[i/2+1];
-                as[1] = SINE_TABLE_B[i/2+1];
-                bs[0] = COSINE_TABLE_A[i/2+1];
-                bs[1] = COSINE_TABLE_B[i/2+1];
+                as[0] = SINE_TABLE_A[i/2+1]; // #1
+                as[1] = SINE_TABLE_B[i/2+1]; // #1
+                bs[0] = COSINE_TABLE_A[i/2+1]; // #1
+                bs[1] = COSINE_TABLE_B[i/2+1]; // #1
 
                 /* compute sine */
                 splitMult(xs, bs, temps);
@@ -202,7 +206,7 @@ class FastMathCalc {
      * (may be null)
      * @return cos(x)
      */
-    static double slowCos(final double x, final double result[]) {
+    static double slowCos(final double x, final double result @ArrayLen(2) []) {
 
         final double xs[] = new double[2];
         final double ys[] = new double[2];
@@ -247,7 +251,7 @@ class FastMathCalc {
      * (may be null)
      * @return sin(x)
      */
-    static double slowSin(final double x, final double result[]) {
+    static double slowSin(final double x, final double result @ArrayLen(2) []) {
         final double xs[] = new double[2];
         final double ys[] = new double[2];
         final double facts[] = new double[2];
@@ -291,7 +295,7 @@ class FastMathCalc {
      *  for extra precision (i.e. exp(x) = result[0] + result[1]
      *  @return exp(x)
      */
-    static double slowexp(final double x, final double result[]) {
+    static double slowexp(final double x, final double result @ArrayLen(2) []) {
         final double xs[] = new double[2];
         final double ys[] = new double[2];
         final double facts[] = new double[2];
@@ -325,7 +329,7 @@ class FastMathCalc {
      * @param d number to split
      * @param split placeholder where to place the result
      */
-    private static void split(final double d, final double split[]) {
+    private static void split(final double d, final double split @ArrayLen(2) []) {
         if (d < 8e298 && d > -8e298) {
             final double a = d * HEX_40000000;
             split[0] = (d + a) - a;
@@ -341,7 +345,7 @@ class FastMathCalc {
      * @param a input/out array containing the split, changed
      * on output
      */
-    private static void resplit(final double a[]) {
+    private static void resplit(final double a @ArrayLen(2) []) {
         final double c = a[0] + a[1];
         final double d = -(c - a[0] - a[1]);
 
@@ -361,7 +365,7 @@ class FastMathCalc {
      * @param b second term of multiplication
      * @param ans placeholder where to put the result
      */
-    private static void splitMult(double a[], double b[], double ans[]) {
+    private static void splitMult(double a @ArrayLen(2) [], double b @ArrayLen(2) [], double ans @ArrayLen(2) []) {
         ans[0] = a[0] * b[0];
         ans[1] = a[0] * b[1] + a[1] * b[0] + a[1] * b[1];
 
@@ -374,7 +378,7 @@ class FastMathCalc {
      * @param b second term of addition
      * @param ans placeholder where to put the result
      */
-    private static void splitAdd(final double a[], final double b[], final double ans[]) {
+    private static void splitAdd(final double a @ArrayLen(2) [], final double b @ArrayLen(2) [], final double ans @ArrayLen(2) []) {
         ans[0] = a[0] + b[0];
         ans[1] = a[1] + b[1];
 
@@ -399,7 +403,7 @@ class FastMathCalc {
      *  @param in initial number, in split form
      *  @param result placeholder where to put the result
      */
-    static void splitReciprocal(final double in[], final double result[]) {
+    static void splitReciprocal(final double in @ArrayLen(2) [], final double result @ArrayLen(2) []) {
         final double b = 1.0/4194304.0;
         final double a = 1.0 - b;
 
@@ -434,7 +438,7 @@ class FastMathCalc {
      * @param b second term of the multiplication
      * @param result placeholder where to put the result
      */
-    private static void quadMult(final double a[], final double b[], final double result[]) {
+    private static void quadMult(final double a @ArrayLen(2) [], final double b @ArrayLen(2) [], final double result @ArrayLen(2) []) {
         final double xs[] = new double[2];
         final double ys[] = new double[2];
         final double zs[] = new double[2];
@@ -488,7 +492,7 @@ class FastMathCalc {
      * @param result placeholder where to put the result in extended precision
      * @return exp(p) in standard precision (equal to result[0] + result[1])
      */
-    static double expint(int p, final double result[]) {
+    static double expint(int p, final double result @ArrayLen(2) []) {
         //double x = M_E;
         final double xs[] = new double[2];
         final double as[] = new double[2];
@@ -546,7 +550,7 @@ class FastMathCalc {
      * @param xi number from which log is requested
      * @return log(xi)
      */
-    static double[] slowLog(double xi) {
+    static double @ArrayLen(2) [] slowLog(double xi) {
         double x[] = new double[2];
         double x2[] = new double[2];
         double y[] = new double[2];

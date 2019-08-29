@@ -365,6 +365,19 @@
   </contributors>
 
   <dependencies>
+
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>checker-qual</artifactId>
+      <version>2.9.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.checkerframework</groupId>
+      <artifactId>jdk8</artifactId>
+      <version>2.9.0</version>
+    </dependency>
+
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-statistics-distribution</artifactId>
@@ -460,6 +473,7 @@
   </dependencies>
 
   <properties>
+    <annotatedJdk>${org.checkerframework:jdk8:jar}</annotatedJdk>
     <!-- Do not change: "math" is the name of the component even if the
          name of the base package evolves with major release numbers
          (see "commons.osgi.symbolicName", below). -->
@@ -515,50 +529,102 @@
   </properties>
 
   <build>
-      <plugins>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
+    <plugins>
+      <plugin>
+        <!-- This plugin will set properties values using dependency information -->
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>properties</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.6.1</version>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>compile</goal>
+            </goals>
             <configuration>
-            <!-- Fix for OpenJDK 8 now validating class-path attributes in Jar manifests. -->
-            <!-- See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=912333#63 -->
-            <useSystemClassLoader>false</useSystemClassLoader>
-              <includes>
-                <include>**/*Test.java</include>
-                <include>**/*TestBinary.java</include>
-                <include>**/*TestPermutations.java</include>
-              </includes>
-              <excludes>
-                <exclude>**/*AbstractTest.java</exclude>
-              </excludes>
-          </configuration>
-        </plugin>
-        <plugin>
-          <artifactId>maven-assembly-plugin</artifactId>
-          <configuration>
-            <descriptors>
-              <descriptor>src/assembly/src.xml</descriptor>
-              <descriptor>src/assembly/bin.xml</descriptor>
-            </descriptors>
-            <!-- There are a lot of long file names. Suppress the warnings. -->
-            <tarLongFileMode>gnu</tarLongFileMode>
-          </configuration>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>clirr-maven-plugin</artifactId>
-          <version>${math.clirr.version}</version>
-          <configuration>
-            <minSeverity>${minSeverity}</minSeverity>
-            <ignoredDifferencesFile>${basedir}/clirr-ignored.xml</ignoredDifferencesFile>
-          </configuration>
-          <executions>
-            <execution>
-              <goals>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
+              <source>1.8</source>
+              <target>1.8</target>
+              <compilerArguments>
+                <Xmaxerrs>10000</Xmaxerrs>
+                <Xmaxwarns>10000</Xmaxwarns>
+              </compilerArguments>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>org.checkerframework</groupId>
+                  <artifactId>checker</artifactId>
+                  <version>2.9.0</version>
+                </path>
+              </annotationProcessorPaths>
+              <annotationProcessors>
+                <!-- Add all the checkers you want to enable here -->
+                <annotationProcessor>org.checkerframework.checker.index.IndexChecker</annotationProcessor>
+              </annotationProcessors>
+              <compilerArgs>
+                <!-- location of the annotated JDK, which comes from a Maven dependency -->
+                <arg>-Xbootclasspath/p:${annotatedJdk}</arg>
+                <arg>-AonlyDefs=^org\.apache\.commons\.math4\.util\.</arg>
+                <arg>-ArequirePrefixInWarningSuppressions</arg>
+                <arg>-AwarnUnneededSuppressions</arg>
+              </compilerArgs>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- Fix for OpenJDK 8 now validating class-path attributes in Jar manifests. -->
+          <!-- See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=912333#63 -->
+          <useSystemClassLoader>false</useSystemClassLoader>
+          <includes>
+            <include>**/*Test.java</include>
+            <include>**/*TestBinary.java</include>
+            <include>**/*TestPermutations.java</include>
+          </includes>
+          <excludes>
+            <exclude>**/*AbstractTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <descriptors>
+            <descriptor>src/assembly/src.xml</descriptor>
+            <descriptor>src/assembly/bin.xml</descriptor>
+          </descriptors>
+          <!-- There are a lot of long file names. Suppress the warnings. -->
+          <tarLongFileMode>gnu</tarLongFileMode>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <version>${math.clirr.version}</version>
+        <configuration>
+          <minSeverity>${minSeverity}</minSeverity>
+          <ignoredDifferencesFile>${basedir}/clirr-ignored.xml</ignoredDifferencesFile>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>maven-pmd-plugin</artifactId>
         <version>${math.pmd.version}</version>
@@ -1042,6 +1108,41 @@
                     <argument>${benchmark}</argument>
                   </arguments>
                 </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>mathjax-java8</id>
+      <activation><jdk>[1.8,)</jdk></activation>
+      <properties>
+        <!-- MathJax requires additional Javadoc qualifier for Java8+ -->
+        <allowscript.javadoc.qualifier>--allow-script-in-comments</allowscript.javadoc.qualifier>
+      </properties>
+    </profile>
+    <profile>
+      <id>checker</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.checkerframework</groupId>
+          <artifactId>checker</artifactId>
+          <version>2.9.0</version>
+          <scope>provided</scope>
+        </dependency>
+      </dependencies>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>2.10</version>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>properties</goal>
+                </goals>
               </execution>
             </executions>
           </plugin>

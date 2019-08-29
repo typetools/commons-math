@@ -26,6 +26,11 @@ import java.util.NoSuchElementException;
 import org.apache.commons.math4.Field;
 import org.apache.commons.math4.FieldElement;
 
+import org.checkerframework.checker.index.qual.NonNegative;
+import org.checkerframework.checker.index.qual.SameLen;
+import org.checkerframework.checker.index.qual.IndexFor;
+import org.checkerframework.checker.index.qual.LTLengthOf;
+
 /**
  * Open addressed map from int to FieldElement.
  * <p>This class provides a dedicated map from integers to FieldElements with a
@@ -71,13 +76,13 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
     private final Field<T> field;
 
     /** Keys table. */
-    private int[] keys;
+    private int @SameLen({"this.states", "this.values"}) [] keys;
 
     /** Values table. */
-    private T[] values;
+    private T @SameLen({"this.states", "this.keys"}) [] values;
 
     /** States table. */
-    private byte[] states;
+    private byte @SameLen({"this.values", "this.keys"}) [] states;
 
     /** Return value for missing entries. */
     private final T missingEntries;
@@ -86,7 +91,7 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
     private int size;
 
     /** Bit mask for hash values. */
-    private int mask;
+    private @IndexFor({"this.states", "this.keys","this.values"}) int mask;
 
     /** Modifications count. */
     private transient int count;
@@ -123,13 +128,14 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
      * @param expectedSize expected number of elements in the map
      * @param missingEntries value to return when a missing entry is fetched
      */
+    @SuppressWarnings("index:assignment.type.incompatible") // #1: all three are assigned with equal length, i.e., capacity, hence @SameLen
     public OpenIntToFieldHashMap(final Field<T> field,final int expectedSize,
                                   final T missingEntries) {
         this.field = field;
         final int capacity = computeCapacity(expectedSize);
-        keys   = new int[capacity];
-        values = buildArray(capacity);
-        states = new byte[capacity];
+        keys   = new int[capacity]; // #1
+        values = buildArray(capacity); // #1
+        states = new byte[capacity]; // #1
         this.missingEntries = missingEntries;
         mask   = capacity - 1;
     }
@@ -138,14 +144,18 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
      * Copy constructor.
      * @param source map to copy
      */
+    @SuppressWarnings({"index:assignment.type.incompatible", "index:argument.type.incompatible"}) /*
+    #1: all three are assigned with equal length, i.e., capacity, hence @SameLen
+    #2: length = source.values.length due to the @SameLen annotation
+    */
     public OpenIntToFieldHashMap(final OpenIntToFieldHashMap<T> source) {
         field = source.field;
         final int length = source.keys.length;
-        keys = new int[length];
+        keys = new int[length]; // #1
         System.arraycopy(source.keys, 0, keys, 0, length);
-        values = buildArray(length);
-        System.arraycopy(source.values, 0, values, 0, length);
-        states = new byte[length];
+        values = buildArray(length); // #1
+        System.arraycopy(source.values, 0, values, 0, length); // #2
+        states = new byte[length]; // #1
         System.arraycopy(source.states, 0, states, 0, length);
         missingEntries = source.missingEntries;
         size  = source.size;
@@ -158,16 +168,17 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
      * @param expectedSize expected size of the map
      * @return capacity to use for the specified size
      */
-    private static int computeCapacity(final int expectedSize) {
+    @SuppressWarnings({"index:return.type.incompatible","index:argument.type.incompatible"}) // #1: capacity by #0.1 is (int) FastMath.ceil(@NonNegative / @NonNegative) which is @NonNegative
+    private static @NonNegative int computeCapacity(final int expectedSize) {
         if (expectedSize == 0) {
             return 1;
         }
-        final int capacity   = (int) FastMath.ceil(expectedSize / LOAD_FACTOR);
+        final int capacity   = (int) FastMath.ceil(expectedSize / LOAD_FACTOR); // #0.1
         final int powerOfTwo = Integer.highestOneBit(capacity);
         if (powerOfTwo == capacity) {
-            return capacity;
+            return capacity; // #1
         }
-        return nextPowerOfTwo(capacity);
+        return nextPowerOfTwo(capacity); // #1
     }
 
     /**
@@ -276,33 +287,37 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
      * @param mask bit mask for hash values
      * @return index at which key should be inserted
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:argument.type.incompatible"}) /*
+    mask is @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"}) which makes
+    index = <variable> & mask also @NonNegative and @LessThan({"this.states.length", "this.keys.length","this.values.length"})
+    */
     private static int findInsertionIndex(final int[] keys, final byte[] states,
                                           final int key, final int mask) {
         final int hash = hashOf(key);
         int index = hash & mask;
-        if (states[index] == FREE) {
+        if (states[index] == FREE) { // #1
             return index;
-        } else if (states[index] == FULL && keys[index] == key) {
+        } else if (states[index] == FULL && keys[index] == key) { // #1
             return changeIndexSign(index);
         }
 
         int perturb = perturb(hash);
         int j = index;
-        if (states[index] == FULL) {
+        if (states[index] == FULL) { // #1
             while (true) {
                 j = probe(perturb, j);
                 index = j & mask;
                 perturb >>= PERTURB_SHIFT;
 
-                if (states[index] != FULL || keys[index] == key) {
+                if (states[index] != FULL || keys[index] == key) { // #1
                     break;
                 }
             }
         }
 
-        if (states[index] == FREE) {
+        if (states[index] == FREE) { // #1
             return index;
-        } else if (states[index] == FULL) {
+        } else if (states[index] == FULL) { // #1
             // due to the loop exit condition,
             // if (states[index] == FULL) then keys[index] == key
             return changeIndexSign(index);
@@ -313,9 +328,9 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
             j = probe(perturb, j);
             index = j & mask;
 
-            if (states[index] == FREE) {
+            if (states[index] == FREE) { // #1
                 return firstRemoved;
-            } else if (states[index] == FULL && keys[index] == key) {
+            } else if (states[index] == FULL && keys[index] == key) { // #1
                 return changeIndexSign(index);
             }
 
@@ -390,7 +405,7 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
      * @param index index to check
      * @return true if an element is associated with key at index
      */
-    private boolean containsKey(final int key, final int index) {
+    private boolean containsKey(final int key, final @IndexFor({"this.states", "this.values", "this.keys"}) int index) {
         return (key != 0 || states[index] == FULL) && keys[index] == key;
     }
 
@@ -399,7 +414,7 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
      * @param index index of the element to remove
      * @return removed value
      */
-    private T doRemove(int index) {
+    private T doRemove(@IndexFor({"this.states", "this.values", "this.keys"}) int index) {
         keys[index]   = 0;
         states[index] = REMOVED;
         final T previous = values[index];
@@ -415,6 +430,10 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
      * @param value value to put in the map
      * @return previous value associated with the key
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high"}) /*
+    #1: findInsertionIndex() returns (<variable> & mask) or changeIndexSign(<variable> & mask) whose magnitude is @LessThan({"this.values.length", "this.states.length", "this.keys.length"})
+    as mask is @LessThan({"this.values.length", "this.states", "this.keys.length"}). The possibility of negative index has been checked and then index is made positive with the same magnitude
+    */
     public T put(final int key, final T value) {
         int index = findInsertionIndex(key);
         T previous = missingEntries;
@@ -424,9 +443,9 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
             previous = values[index];
             newMapping = false;
         }
-        keys[index]   = key;
-        states[index] = FULL;
-        values[index] = value;
+        keys[index]   = key; // #1
+        states[index] = FULL; // #1
+        values[index] = value; // #1
         if (newMapping) {
             ++size;
             if (shouldGrowTable()) {
@@ -441,6 +460,11 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
     /**
      * Grow the tables.
      */
+    @SuppressWarnings({"index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:assignment.type.incompatible"}) /*
+    #1: the new arrays created have a greater length than the old arrays by #0.1, hence, states[index] will not be full,
+        hence a positive index will be returned (look at implementaion of findInsertionIndex())
+    #2: All the arrays are defined with the same length, hence the annotation is retained. Also, mask = newLength - 1 < newLength which is the length of the new arrays
+    */
     private void growTable() {
 
         final int oldLength      = states.length;
@@ -448,7 +472,7 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
         final T[] oldValues = values;
         final byte[] oldStates   = states;
 
-        final int newLength = RESIZE_MULTIPLIER * oldLength;
+        final int newLength = RESIZE_MULTIPLIER * oldLength; // #0.1
         final int[] newKeys = new int[newLength];
         final T[] newValues = buildArray(newLength);
         final byte[] newStates = new byte[newLength];
@@ -457,16 +481,16 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
             if (oldStates[i] == FULL) {
                 final int key = oldKeys[i];
                 final int index = findInsertionIndex(newKeys, newStates, key, newMask);
-                newKeys[index]   = key;
-                newValues[index] = oldValues[i];
-                newStates[index] = FULL;
+                newKeys[index]   = key; // #1
+                newValues[index] = oldValues[i]; // #1
+                newStates[index] = FULL; // #1
             }
         }
 
-        mask   = newMask;
-        keys   = newKeys;
-        values = newValues;
-        states = newStates;
+        mask   = newMask; // #2
+        keys   = newKeys; // #2
+        values = newValues; // #2
+        states = newStates; // #2
 
     }
 
@@ -496,10 +520,10 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
         private final int referenceCount;
 
         /** Index of current element. */
-        private int current;
+        private @LTLengthOf({"this.states", "this.keys", "this.values"}) int current;
 
         /** Index of next element. */
-        private int next;
+        private @LTLengthOf(value = {"this.states", "this.keys", "this.values"}, offset = {"-1", "-1", "-1"}) int next;
 
         /**
          * Simple constructor.
@@ -566,6 +590,9 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
          * @exception ConcurrentModificationException if the map is modified during iteration
          * @exception NoSuchElementException if there is no element left in the map
          */
+        @SuppressWarnings({"index:assignment.type.incompatible", "index:array.access.unsafe.low", "index:array.access.unsafe.high", "index:unary.increment.type.incompatible"}) /*
+        #1: These statement is never executed with next = states.length because when next = states.length - 1, the try catch block makes next = -2
+        */
         public void advance()
             throws ConcurrentModificationException, NoSuchElementException {
 
@@ -578,7 +605,7 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
 
             // prepare next step
             try {
-                while (states[++next] != FULL) { // NOPMD
+                while (states[++next] != FULL) { // NOPMD #1
                     // nothing to do
                 }
             } catch (ArrayIndexOutOfBoundsException e) {
@@ -610,7 +637,7 @@ public class OpenIntToFieldHashMap<T extends FieldElement<T>> implements Seriali
      * @return a new array
      */
     @SuppressWarnings("unchecked") // field is of type T
-    private T[] buildArray(final int length) {
+    private T[] buildArray(final @NonNegative int length) {
         return (T[]) Array.newInstance(field.getRuntimeClass(), length);
     }
 
